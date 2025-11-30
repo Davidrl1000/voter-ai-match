@@ -1,59 +1,83 @@
+#!/usr/bin/env tsx
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
-import pdf from 'pdf-parse';
 import OpenAI from 'openai';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-// ============================================
-// TYPES
-// ============================================
+import {
+  retryWithBackoff,
+  validatePolicyPosition,
+  validateQuestion,
+  estimateCost,
+  logProgress,
+  chunkText,
+  detectBiasIndicators
+} from '../lib/training/utils';
 
-interface Candidate {
-  candidateId: string;
-  name: string;
-  pdfPath: string;
-  image: string;
-}
+import {
+  POLICY_EXTRACTION_PROMPT,
+  QUESTION_GENERATION_PROMPT,
+} from '../lib/training/prompts-es-cr';
+
+import {
+  loadCandidates,
+  loadCandidatesForTesting,
+  validateAllCandidates,
+  type Candidate
+} from '../lib/training/candidate-mapper';
+
+import { ProgressTracker } from '../lib/training/progress-tracker';
 
 interface PolicyPosition {
+  candidateId: string;
   policyArea: string;
-  stance: string;
-  quote: string;
+  position: string;
   embedding: number[];
+  extractedAt: string;
 }
 
 interface Question {
   questionId: string;
-  text: string;
-  options: string[];
   policyArea: string;
-  format: 'agreement-scale' | 'specific-choice';
-  weight: number;
+  text: string;
+  type: 'agreement-scale' | 'specific-choice';
+  options?: string[];
   embedding: number[];
+  weight: number;
+  biasScore?: number;
 }
 
-// ============================================
-// CONFIGURATION
-// ============================================
+const CONFIG = {
+  model: {
+    extraction: process.env.NODE_ENV === 'production' ? 'o1-pro' : 'gpt-4o-mini',
+    questions: process.env.NODE_ENV === 'production' ? 'o1-pro' : 'gpt-4o-mini',
+    embedding: 'text-embedding-3-small',
+  },
+  language: 'es',
+  retries: 3,
+  backoffMs: 1000,
+  delayBetweenCalls: 1000,
+  questionCount: parseInt(process.env.QUESTION_COUNT || '150'),
+  questionsPerPolicyArea: Math.floor(parseInt(process.env.QUESTION_COUNT || '150') / 7),
+  chunkSize: 2000,
+  chunkOverlap: 200,
+  policyAreas: ['economy', 'healthcare', 'education', 'security', 'environment', 'social', 'infrastructure'],
+  tables: {
+    candidatePositions: process.env.CANDIDATE_POSITIONS_TABLE || 'candidate-positions-dev',
+    questionBank: process.env.QUESTION_BANK_TABLE || 'question-bank-dev',
+  },
+  dryRun: process.env.DRY_RUN === 'true' || process.env.NODE_ENV !== 'production',
+};
 
-const POLICY_AREAS = [
-  'economy',
-  'healthcare',
-  'education',
-  'security',
-  'environment',
-  'social',
-  'infrastructure'
-];
-
-const CHUNK_SIZE = 2000; // tokens
-const CHUNK_OVERLAP = 200; // tokens
-const QUESTIONS_PER_AREA = 143; // 1000 total / 7 areas ≈ 143 per area
-
-// ============================================
-// INITIALIZE CLIENTS
-// ============================================
+logProgress('Training Configuration', {
+  model: CONFIG.model,
+  questionCount: CONFIG.questionCount,
+  dryRun: CONFIG.dryRun,
+  tables: CONFIG.tables,
+});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -61,271 +85,257 @@ const openai = new OpenAI({
 
 const dynamoClient = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-1',
+  ...(process.env.AWS_ACCESS_KEY_ID && {
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    },
+  }),
 });
 
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-// ============================================
-// PDF PROCESSING
-// ============================================
-
 async function extractTextFromPDF(filePath: string): Promise<string> {
   const dataBuffer = fs.readFileSync(filePath);
-  const data = await pdf(dataBuffer);
-  return data.text;
-}
+  const uint8Array = new Uint8Array(dataBuffer);
+  const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+  const pdf = await loadingTask.promise;
 
-function estimateTokens(text: string): number {
-  // Rough estimation: 1 token ≈ 4 characters
-  return Math.ceil(text.length / 4);
-}
-
-function chunkText(text: string, maxTokens: number, overlap: number): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  const chunks: string[] = [];
-  let currentChunk = '';
-  let currentTokens = 0;
-
-  for (const sentence of sentences) {
-    const sentenceTokens = estimateTokens(sentence);
-
-    if (currentTokens + sentenceTokens > maxTokens && currentChunk) {
-      chunks.push(currentChunk.trim());
-
-      // Keep overlap
-      const words = currentChunk.split(' ');
-      const overlapWords = words.slice(-Math.floor(overlap / 4));
-      currentChunk = overlapWords.join(' ') + ' ';
-      currentTokens = estimateTokens(currentChunk);
-    }
-
-    currentChunk += sentence;
-    currentTokens += sentenceTokens;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map(item => ('str' in item ? item.str : ''))
+      .join(' ');
+    fullText += pageText + '\n\n';
   }
 
-  if (currentChunk.trim()) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
+  return fullText;
 }
-
-// ============================================
-// EMBEDDING GENERATION
-// ============================================
 
 async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
-    input: text,
-  });
-
-  return response.data[0].embedding;
+  return retryWithBackoff(async () => {
+    const response = await openai.embeddings.create({
+      model: CONFIG.model.embedding,
+      input: text,
+    });
+    return response.data[0].embedding;
+  }, CONFIG.retries, CONFIG.backoffMs);
 }
 
-// ============================================
-// POLICY EXTRACTION
-// ============================================
-
 async function extractPolicyPositions(
-  candidateName: string,
-  chunks: string[]
+  candidate: Candidate,
+  text: string,
+  progressTracker: ProgressTracker
 ): Promise<PolicyPosition[]> {
-  const allPositions: PolicyPosition[] = [];
+  logProgress(`Extracting policy positions for ${candidate.name}`);
 
-  console.log(`  Extracting policy positions for ${candidateName}...`);
+  const chunks = chunkText(text, CONFIG.chunkSize, CONFIG.chunkOverlap);
+  logProgress(`  Created ${chunks.length} chunks`);
+
+  const allPositions: PolicyPosition[] = [];
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    console.log(`    Processing chunk ${i + 1}/${chunks.length}...`);
+    logProgress(`  Processing chunk ${i + 1}/${chunks.length}`);
 
-    const prompt = `You are analyzing a political candidate's policy document.
-
-Candidate: ${candidateName}
-Document excerpt:
-"""
-${chunk}
-"""
-
-Extract ALL clear policy positions from this text. For each position:
-1. Identify the policy area: ${POLICY_AREAS.join(', ')}
-2. State the candidate's specific stance (be precise and neutral)
-3. Include a direct supporting quote from the text
-
-Return ONLY a JSON array with this exact structure:
-[
-  {
-    "policyArea": "economy",
-    "stance": "specific policy position",
-    "quote": "exact quote from document"
-  }
-]
-
-If no clear policy positions are found, return an empty array: []`;
+    const prompt = `${POLICY_EXTRACTION_PROMPT}\n\n${chunk}`;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: 'o1-pro',
-        messages: [{ role: 'user', content: prompt }],
-      });
+      const response = await retryWithBackoff(async () => {
+        return await openai.chat.completions.create({
+          model: CONFIG.model.extraction,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+        });
+      }, CONFIG.retries, CONFIG.backoffMs);
 
-      const content = response.choices[0].message.content || '[]';
-      const positions = JSON.parse(content);
+      const content = response.choices[0].message.content || '{}';
 
-      // Generate embeddings for each position
-      for (const position of positions) {
-        const embeddingText = `${position.policyArea}: ${position.stance}`;
-        position.embedding = await generateEmbedding(embeddingText);
-        allPositions.push(position);
+      let extractedPositions: Record<string, string>;
+      try {
+        extractedPositions = JSON.parse(content);
+      } catch {
+        console.warn(`    Failed to parse JSON response for chunk ${i + 1}, skipping`);
+        continue;
       }
 
-      console.log(`    Found ${positions.length} positions in this chunk`);
-    } catch (error) {
-      console.error(`    Error processing chunk ${i + 1}:`, error);
-    }
+      for (const policyArea of CONFIG.policyAreas) {
+        const position = extractedPositions[policyArea];
 
-    // Small delay to avoid rate limits
-    await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!position || position.includes('No se menciona')) {
+          continue;
+        }
+
+        const embeddingText = `${policyArea}: ${position}`;
+        const embedding = await generateEmbedding(embeddingText);
+
+        const policyPosition: PolicyPosition = {
+          candidateId: candidate.candidateId,
+          policyArea,
+          position,
+          embedding,
+          extractedAt: new Date().toISOString(),
+        };
+
+        if (validatePolicyPosition(policyPosition)) {
+          allPositions.push(policyPosition);
+          progressTracker.completePolicyArea(candidate.candidateId, policyArea);
+        } else {
+          console.warn(`    Invalid policy position for ${policyArea}, skipping`);
+        }
+      }
+
+      const tokens = response.usage?.total_tokens || 0;
+      const cost = estimateCost(CONFIG.model.extraction, tokens);
+      progressTracker.addCost(CONFIG.model.extraction, cost);
+
+      logProgress(`    Found ${Object.keys(extractedPositions).length} positions in this chunk`);
+      await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenCalls));
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`    Error processing chunk ${i + 1}: ${errorMsg}`);
+      progressTracker.addError({
+        candidateId: candidate.candidateId,
+        error: `Chunk ${i + 1} extraction failed: ${errorMsg}`,
+        timestamp: new Date(),
+      });
+    }
   }
 
-  console.log(`  Total positions extracted: ${allPositions.length}`);
+  logProgress(`  Total positions extracted: ${allPositions.length}`);
   return allPositions;
 }
 
-// ============================================
-// QUESTION GENERATION
-// ============================================
-
-async function generateQuestions(
-  allCandidatePositions: Map<string, PolicyPosition[]>
+async function generateQuestionsForArea(
+  policyArea: string,
+  questionCount: number,
+  progressTracker: ProgressTracker
 ): Promise<Question[]> {
-  console.log('\n📝 Generating question bank...');
+  logProgress(`Generating ${questionCount} questions for ${policyArea}`);
 
-  const allPositions: PolicyPosition[] = [];
-  allCandidatePositions.forEach(positions => {
-    allPositions.push(...positions);
-  });
+  const prompt = QUESTION_GENERATION_PROMPT
+    .replace(/{policyArea}/g, policyArea)
+    .replace(/{questionCount}/g, String(questionCount));
 
-  // Group positions by policy area
-  const positionsByArea = POLICY_AREAS.reduce((acc, area) => {
-    acc[area] = allPositions.filter(p => p.policyArea === area);
-    return acc;
-  }, {} as Record<string, PolicyPosition[]>);
+  try {
+    const response = await retryWithBackoff(async () => {
+      return await openai.chat.completions.create({
+        model: CONFIG.model.questions,
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+      });
+    }, CONFIG.retries, CONFIG.backoffMs);
+
+    const content = response.choices[0].message.content || '{"questions":[]}';
+    const parsed = JSON.parse(content);
+    const rawQuestions = parsed.questions || [];
+
+    const questions: Question[] = [];
+
+    for (let i = 0; i < rawQuestions.length; i++) {
+      const q = rawQuestions[i];
+      const questionId = `q-${policyArea}-${String(i + 1).padStart(3, '0')}`;
+      const embedding = await generateEmbedding(q.text);
+
+      const biasIndicators = detectBiasIndicators(q.text);
+      if (biasIndicators.length > 0) {
+        console.warn(`    Bias indicators in question ${questionId}:`, biasIndicators);
+      }
+
+      const question: Question = {
+        questionId,
+        policyArea,
+        text: q.text,
+        type: q.type || q.format,
+        options: q.options,
+        embedding,
+        weight: 1.0,
+        biasScore: biasIndicators.length > 0 ? 10 - biasIndicators.length : 10,
+      };
+
+      if (validateQuestion(question)) {
+        questions.push(question);
+      } else {
+        console.warn(`    Invalid question ${questionId}, skipping`);
+      }
+    }
+
+    progressTracker.updateQuestionGeneration(policyArea, questions.length, questions.length);
+
+    const tokens = response.usage?.total_tokens || 0;
+    const cost = estimateCost(CONFIG.model.questions, tokens);
+    progressTracker.addCost(CONFIG.model.questions, cost);
+
+    logProgress(`  ✓ Generated ${questions.length} questions for ${policyArea}`);
+    await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenCalls));
+
+    return questions;
+
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`  ✗ Error generating questions for ${policyArea}: ${errorMsg}`);
+    progressTracker.addError({
+      policyArea,
+      error: `Question generation failed: ${errorMsg}`,
+      timestamp: new Date(),
+    });
+    return [];
+  }
+}
+
+async function generateAllQuestions(progressTracker: ProgressTracker): Promise<Question[]> {
+  logProgress('\n📝 Generating question bank');
 
   const allQuestions: Question[] = [];
 
-  for (const policyArea of POLICY_AREAS) {
-    const positions = positionsByArea[policyArea];
-
-    if (positions.length === 0) {
-      console.log(`  ⚠️  No positions found for ${policyArea}, skipping...`);
-      continue;
-    }
-
-    console.log(`  Generating questions for ${policyArea} (${positions.length} positions)...`);
-
-    const positionSummaries = positions
-      .map(p => `- ${p.stance}`)
-      .slice(0, 50) // Limit to avoid token overflow
-      .join('\n');
-
-    const prompt = `You are creating questions for a neutral voter assistance tool.
-
-Policy Area: ${policyArea}
-
-Candidate positions in this area:
-${positionSummaries}
-
-Generate ${QUESTIONS_PER_AREA} diverse questions about ${policyArea} policy.
-
-Requirements:
-- 70% should be agreement scale questions (Strongly agree/Agree/Neutral/Disagree/Strongly disagree)
-- 30% should be specific policy choice questions (3 distinct policy options)
-- ALL questions MUST include "Not important to me" as the final option
-- Questions must be neutral (no partisan framing)
-- Cover different aspects of ${policyArea}
-- Questions should help voters distinguish between candidates
-
-Return ONLY a JSON array with this exact structure:
-[
-  {
-    "text": "question text",
-    "options": ["option1", "option2", "option3", "Not important to me"],
-    "format": "agreement-scale" or "specific-choice"
-  }
-]`;
-
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'o1-pro',
-        messages: [{ role: 'user', content: prompt }],
-      });
-
-      const content = response.choices[0].message.content || '[]';
-      const questions = JSON.parse(content);
-
-      // Process and store questions
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        const questionId = `q-${policyArea}-${String(i + 1).padStart(3, '0')}`;
-
-        const embedding = await generateEmbedding(q.text);
-
-        allQuestions.push({
-          questionId,
-          text: q.text,
-          options: q.options,
-          policyArea,
-          format: q.format,
-          weight: 1.0,
-          embedding
-        });
-      }
-
-      console.log(`  ✓ Generated ${questions.length} questions for ${policyArea}`);
-    } catch (error) {
-      console.error(`  ✗ Error generating questions for ${policyArea}:`, error);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  for (const policyArea of CONFIG.policyAreas) {
+    const questions = await generateQuestionsForArea(
+      policyArea,
+      CONFIG.questionsPerPolicyArea,
+      progressTracker
+    );
+    allQuestions.push(...questions);
   }
 
-  console.log(`\n✓ Total questions generated: ${allQuestions.length}`);
+  logProgress(`\n✓ Total questions generated: ${allQuestions.length}`);
   return allQuestions;
 }
 
-// ============================================
-// DYNAMODB STORAGE
-// ============================================
-
 async function storeCandidatePositions(
-  candidateId: string,
-  name: string,
-  pdfPath: string,
-  image: string,
+  candidate: Candidate,
   policyPositions: PolicyPosition[]
-) {
-  const command = new PutCommand({
-    TableName: process.env.CANDIDATE_POSITIONS_TABLE || 'candidate-positions',
-    Item: {
-      candidateId,
-      name,
-      pdfPath,
-      image,
-      policyPositions,
-      processedAt: new Date().toISOString()
-    }
-  });
+): Promise<void> {
+  for (const position of policyPositions) {
+    const command = new PutCommand({
+      TableName: CONFIG.tables.candidatePositions,
+      Item: {
+        candidateId: candidate.candidateId,
+        policyArea: position.policyArea,
+        name: candidate.name,
+        party: candidate.party,
+        position: position.position,
+        embedding: position.embedding,
+        extractedAt: position.extractedAt,
+      }
+    });
 
-  await docClient.send(command);
-  console.log(`✓ Stored positions for ${name} in DynamoDB`);
+    await retryWithBackoff(
+      async () => await docClient.send(command),
+      CONFIG.retries,
+      CONFIG.backoffMs
+    );
+  }
+
+  logProgress(`✓ Stored ${policyPositions.length} positions for ${candidate.name} in DynamoDB`);
 }
 
-async function storeQuestionBank(questions: Question[]) {
-  console.log('\n💾 Storing question bank in DynamoDB...');
+async function storeQuestionBank(questions: Question[]): Promise<void> {
+  logProgress('\n💾 Storing question bank in DynamoDB');
 
-  // DynamoDB batch write limit is 25 items
-  const batches = [];
+  const batches: Question[][] = [];
   for (let i = 0; i < questions.length; i += 25) {
     batches.push(questions.slice(i, i + 25));
   }
@@ -335,7 +345,7 @@ async function storeQuestionBank(questions: Question[]) {
 
     const command = new BatchWriteCommand({
       RequestItems: {
-        [process.env.QUESTION_BANK_TABLE || 'question-bank']: batch.map(q => ({
+        [CONFIG.tables.questionBank]: batch.map(q => ({
           PutRequest: {
             Item: q
           }
@@ -343,86 +353,100 @@ async function storeQuestionBank(questions: Question[]) {
       }
     });
 
-    await docClient.send(command);
-    console.log(`  Batch ${i + 1}/${batches.length} stored`);
+    await retryWithBackoff(
+      async () => await docClient.send(command),
+      CONFIG.retries,
+      CONFIG.backoffMs
+    );
 
+    logProgress(`  Batch ${i + 1}/${batches.length} stored`);
     await new Promise(resolve => setTimeout(resolve, 200));
   }
 
-  console.log(`✓ All ${questions.length} questions stored in DynamoDB`);
+  logProgress(`✓ All ${questions.length} questions stored in DynamoDB`);
 }
 
-// ============================================
-// MAIN TRAINING FUNCTION
-// ============================================
-
-async function trainSystem(candidatesJsonPath: string) {
+async function trainSystem(): Promise<void> {
   console.log('🚀 Starting system training...\n');
+  console.log(`🌍 Language: Spanish (Costa Rica)`);
+  console.log(`🤖 Model: ${CONFIG.model.extraction} (extraction), ${CONFIG.model.questions} (questions)`);
+  console.log(`📊 Mode: ${CONFIG.dryRun ? 'DRY RUN (3 candidates)' : 'PRODUCTION (all candidates)'}\n`);
 
   const startTime = Date.now();
 
-  // Load candidates
-  const candidatesData = JSON.parse(fs.readFileSync(candidatesJsonPath, 'utf-8'));
-  const candidates: Candidate[] = candidatesData;
+  const candidates = CONFIG.dryRun ? loadCandidatesForTesting(1) : loadCandidates();
 
-  console.log(`📋 Found ${candidates.length} candidates\n`);
+  const validation = validateAllCandidates(candidates);
+  if (!validation.valid) {
+    throw new Error('Candidate validation failed. Please fix the errors above.');
+  }
 
-  // Step 1: Process each candidate's PDF
-  const allCandidatePositions = new Map<string, PolicyPosition[]>();
+  const progressTracker = new ProgressTracker({
+    model: CONFIG.model.extraction,
+    questionCount: CONFIG.questionCount,
+    dryRun: CONFIG.dryRun,
+    candidateCount: candidates.length,
+  });
+
+  progressTracker.startAutoSave();
+
+  for (const candidate of candidates) {
+    progressTracker.initializeCandidate(candidate.candidateId, candidate.name);
+  }
+
+  logProgress(`\n📋 Processing ${candidates.length} candidates`);
 
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
-    console.log(`\n[${i + 1}/${candidates.length}] Processing ${candidate.name}...`);
+    logProgress(`\n[${i + 1}/${candidates.length}] Processing ${candidate.name}`);
+
+    progressTracker.startCandidate(candidate.candidateId);
 
     try {
-      // Extract text
-      console.log(`  📄 Extracting text from ${candidate.pdfPath}...`);
+      logProgress(`  📄 Extracting text from PDF`);
       const text = await extractTextFromPDF(candidate.pdfPath);
-      console.log(`  ✓ Extracted ${text.length} characters`);
+      logProgress(`  ✓ Extracted ${text.length} characters`);
 
-      // Chunk text
-      console.log(`  ✂️  Chunking text...`);
-      const chunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP);
-      console.log(`  ✓ Created ${chunks.length} chunks`);
+      const positions = await extractPolicyPositions(candidate, text, progressTracker);
 
-      // Extract policy positions
-      const positions = await extractPolicyPositions(candidate.name, chunks);
-
-      // Store in DynamoDB
-      await storeCandidatePositions(
-        candidate.candidateId,
-        candidate.name,
-        candidate.pdfPath,
-        candidate.image,
-        positions
-      );
-
-      allCandidatePositions.set(candidate.candidateId, positions);
+      if (positions.length > 0) {
+        await storeCandidatePositions(candidate, positions);
+        progressTracker.completeCandidate(candidate.candidateId);
+      } else {
+        throw new Error('No policy positions extracted');
+      }
 
     } catch (error) {
-      console.error(`  ✗ Error processing ${candidate.name}:`, error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`  ✗ Error processing ${candidate.name}: ${errorMsg}`);
+      progressTracker.failCandidate(candidate.candidateId, errorMsg);
     }
+
+    progressTracker.printSummary();
   }
 
-  // Step 2: Generate question bank
-  const questions = await generateQuestions(allCandidatePositions);
+  const questions = await generateAllQuestions(progressTracker);
 
-  // Step 3: Store question bank
-  await storeQuestionBank(questions);
+  if (questions.length > 0) {
+    await storeQuestionBank(questions);
+  } else {
+    throw new Error('No questions generated');
+  }
 
-  // Step 4: Save backup to file
-  const backupDir = path.join(process.cwd(), 'data');
+  const backupDir = path.join(process.cwd(), 'data', 'training-backups');
   if (!fs.existsSync(backupDir)) {
     fs.mkdirSync(backupDir, { recursive: true });
   }
 
-  fs.writeFileSync(
-    path.join(backupDir, 'question-bank-backup.json'),
-    JSON.stringify(questions, null, 2)
-  );
-  console.log('\n✓ Backup saved to data/question-bank-backup.json');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = path.join(backupDir, `question-bank-${timestamp}.json`);
 
-  // Final report
+  fs.writeFileSync(backupPath, JSON.stringify(questions, null, 2), 'utf-8');
+  logProgress(`\n✓ Backup saved to ${backupPath}`);
+
+  progressTracker.complete();
+  progressTracker.stopAutoSave();
+
   const endTime = Date.now();
   const duration = ((endTime - startTime) / 1000 / 60).toFixed(2);
 
@@ -431,19 +455,18 @@ async function trainSystem(candidatesJsonPath: string) {
   console.log('='.repeat(60));
   console.log(`\n⏱️  Duration: ${duration} minutes`);
   console.log(`\n✅ Results:`);
-  console.log(`   Candidates processed: ${candidates.length}`);
+  console.log(`   Candidates processed: ${progressTracker.getProgress().candidates.processed}`);
+  console.log(`   Candidates failed:    ${progressTracker.getProgress().candidates.failed}`);
   console.log(`   Questions generated:  ${questions.length}`);
-  console.log('\n' + '='.repeat(60));
+  console.log(`   Estimated cost:       $${progressTracker.getProgress().costs.totalEstimated.toFixed(4)}`);
+  console.log('\n' + '='.repeat(60) + '\n');
 }
 
-// ============================================
-// RUN
-// ============================================
-
-const candidatesPath = process.argv[2] || './candidates.json';
-
-trainSystem(candidatesPath)
-  .then(() => process.exit(0))
+trainSystem()
+  .then(() => {
+    logProgress('✓ Training completed successfully');
+    process.exit(0);
+  })
   .catch(error => {
     console.error('\n❌ Training failed:', error);
     process.exit(1);
