@@ -355,12 +355,14 @@ export class ProgressTracker {
 
     console.log('\n📊 CANDIDATES:');
     console.log(`  Total: ${candidates.total}`);
-    console.log(`  Processed: ${candidates.processed} (${Math.round(candidates.processed / candidates.total * 100)}%)`);
+    const candidatePercentage = candidates.total > 0 ? Math.round((candidates.processed / candidates.total) * 100) : 0;
+    console.log(`  Processed: ${candidates.processed} (${candidatePercentage}%)`);
     console.log(`  Failed: ${candidates.failed}`);
 
     console.log('\n❓ QUESTIONS:');
     console.log(`  Target: ${questions.targetTotal}`);
-    console.log(`  Generated: ${questions.generated} (${Math.round(questions.generated / questions.targetTotal * 100)}%)`);
+    const questionPercentage = questions.targetTotal > 0 ? Math.round((questions.generated / questions.targetTotal) * 100) : 0;
+    console.log(`  Generated: ${questions.generated} (${questionPercentage}%)`);
     console.log(`  Validated: ${questions.validated}`);
 
     console.log('\n💰 COSTS:');
