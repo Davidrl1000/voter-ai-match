@@ -1,0 +1,197 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import type { Question } from '@/lib/db/dynamodb';
+import type { UserAnswer } from '@/lib/matching/algorithm';
+import { POLICY_AREA_LABELS } from '@/lib/constants';
+import LoadingSpinner from './LoadingSpinner';
+
+interface QuizProps {
+  onComplete: (answers: UserAnswer[]) => void;
+  questionLimit: number;
+}
+
+const agreementOptions = [
+  { value: 1, label: 'Muy en desacuerdo' },
+  { value: 2, label: 'En desacuerdo' },
+  { value: 3, label: 'Neutral' },
+  { value: 4, label: 'De acuerdo' },
+  { value: 5, label: 'Muy de acuerdo' },
+];
+
+export default function Quiz({ onComplete, questionLimit }: QuizProps) {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<UserAnswer[]>([]);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadQuestions() {
+      try {
+        const response = await fetch(`/api/questions?limit=${questionLimit}`);
+        if (!response.ok) {
+          throw new Error('Failed to load questions');
+        }
+        const data = await response.json();
+        setQuestions(data.questions.slice(0, questionLimit));
+        setLoading(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error loading questions');
+        setLoading(false);
+      }
+    }
+
+    loadQuestions();
+  }, [questionLimit]);
+
+  const currentQuestion = questions[currentIndex];
+  const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
+  const handleAnswer = () => {
+    if (selectedAnswer === null || !currentQuestion) return;
+
+    const answer: UserAnswer = {
+      questionId: currentQuestion.questionId,
+      answer: selectedAnswer,
+      policyArea: currentQuestion.policyArea,
+      questionEmbedding: currentQuestion.embedding,
+    };
+
+    const newAnswers = [...answers, answer];
+    setAnswers(newAnswers);
+
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedAnswer(null);
+    } else {
+      onComplete(newAnswers);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setAnswers(answers.slice(0, -1));
+      setSelectedAnswer(null);
+    }
+  };
+
+  const canSubmitEarly = currentIndex >= 9 && answers.length >= 10;
+
+  if (loading) {
+    return <LoadingSpinner message="Cargando preguntas..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white px-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md w-full">
+          <h2 className="text-red-800 font-semibold mb-2">Error</h2>
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 flex items-center">
+      <div className="max-w-2xl mx-auto w-full">
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="bg-white border border-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Pregunta {currentIndex + 1} de {questions.length}
+          </p>
+        </div>
+
+        {/* Question Card */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">
+          {/* Category Tag */}
+          <div className="mb-5">
+            <span className="inline-block px-3 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              {POLICY_AREA_LABELS[currentQuestion.policyArea] || currentQuestion.policyArea}
+            </span>
+          </div>
+
+          {/* Question Text */}
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+            {currentQuestion.text}
+          </h2>
+
+          {/* Answer Options */}
+          <div className="space-y-2.5 mb-6">
+            {currentQuestion.type === 'agreement-scale' ? (
+              agreementOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedAnswer(option.value)}
+                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base ${
+                    selectedAnswer === option.value
+                      ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <span className="font-medium text-gray-900">{option.label}</span>
+                </button>
+              ))
+            ) : (
+              currentQuestion.options?.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedAnswer(option)}
+                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base ${
+                    selectedAnswer === option
+                      ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <span className="font-medium text-gray-900">{option}</span>
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 border-t border-gray-100">
+            <button
+              onClick={handleBack}
+              disabled={currentIndex === 0}
+              className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              ← Anterior
+            </button>
+
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              {canSubmitEarly && currentIndex < questions.length - 1 && (
+                <button
+                  onClick={() => onComplete(answers)}
+                  className="px-5 py-2.5 text-sm text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all whitespace-nowrap"
+                >
+                  Finalizar ({answers.length})
+                </button>
+              )}
+              <button
+                onClick={handleAnswer}
+                disabled={selectedAnswer === null}
+                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

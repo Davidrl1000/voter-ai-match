@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && npm run type-check",
+    "type-check": "tsc --noEmit",
     "train": "NODE_ENV=production DRY_RUN=false tsx scripts/train-system.ts",
     "train:dev": "NODE_ENV=development DRY_RUN=true tsx scripts/train-system.ts"
   },
@@ -26,6 +27,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
     "tailwindcss": "^4",

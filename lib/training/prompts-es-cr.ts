@@ -194,7 +194,14 @@ TOP 3 CANDIDATOS:
 TU TAREA:
 Explica de manera conversacional, breve y neutral POR QUÉ estos son sus matches principales.
 
-REQUISITOS:
+REQUISITOS ESTRICTOS DE IDIOMA:
+- CRÍTICO: Responde ÚNICAMENTE en español de Costa Rica (es-CR)
+- PROHIBIDO usar palabras en inglés, incluso términos técnicos
+- PROHIBIDO mezclar idiomas
+- Si un término técnico no tiene traducción directa, usa una descripción en español
+- Usa vocabulario y expresiones propias del español costarricense
+
+REQUISITOS DE CONTENIDO:
 - Máximo 300 palabras (mantén la atención del usuario)
 - Tono amigable pero profesional
 - Explica las áreas de alineación sin hacer juicios de valor
@@ -213,6 +220,7 @@ IMPORTANTE:
 - No inventes información sobre candidatos
 - Solo menciona áreas donde hay alineación clara
 - Sé específico pero conciso
+- RECUERDA: Solo español de Costa Rica, sin excepciones
 
 Genera la explicación ahora:`;
 
