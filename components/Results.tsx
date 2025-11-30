@@ -26,7 +26,6 @@ export default function Results({ answers, onRestart }: ResultsProps) {
   const [error, setError] = useState<string | null>(null);
   const [aiExplanation, setAiExplanation] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const textRef = useRef<HTMLParagraphElement>(null);
   const hasStreamedRef = useRef(false);
 
   const streamExplanation = useCallback(async (matchesData: CandidateMatch[]) => {
@@ -35,6 +34,8 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     hasStreamedRef.current = true;
 
     setIsStreaming(true);
+    setAiExplanation(''); // Reset explanation
+
     try {
       const response = await fetch('/api/explain', {
         method: 'POST',
@@ -58,23 +59,15 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('No reader available');
       }
 
-      let accumulated = '';
-
+      // By updating state directly, we keep the component declarative and robust.
+      // React 18+ batches these updates, so performance is excellent.
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const text = decoder.decode(value, { stream: true });
-        accumulated += text;
-
-        // Update DOM directly without React re-render (smooth!)
-        if (textRef.current) {
-          textRef.current.textContent = accumulated;
-        }
+        setAiExplanation((prev) => prev + text);
       }
-
-      // Final state update when done
-      setAiExplanation(accumulated);
 
       setIsStreaming(false);
     } catch (err) {
@@ -183,36 +176,9 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                 </span>
               )}
             </div>
-            <div
-              className="text-sm text-gray-700 leading-relaxed"
-              style={{
-                minHeight: '100px',
-                position: 'relative',
-                isolation: 'isolate',
-              }}
-            >
-              {(isStreaming || aiExplanation) && (
-                <p
-                  ref={textRef}
-                  style={{
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word',
-                    willChange: 'contents',
-                    contain: 'layout paint',
-                    contentVisibility: 'auto',
-                    transform: 'translateZ(0)',
-                    backfaceVisibility: 'hidden',
-                    WebkitFontSmoothing: 'antialiased',
-                    overflowAnchor: 'none',
-                    margin: 0,
-                    padding: 0,
-                  }}
-                >
-                  {!isStreaming && aiExplanation}
-                </p>
-              )}
-              {isStreaming && textRef.current?.textContent && (
+            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {aiExplanation}
+              {isStreaming && aiExplanation && (
                 <span className="inline-block w-0.5 h-4 bg-blue-600 ml-0.5 animate-pulse"></span>
               )}
             </div>

@@ -61,7 +61,8 @@ Create an IAM policy with these permissions:
         "dynamodb:BatchWriteItem",
         "dynamodb:Query",
         "dynamodb:Scan",
-        "dynamodb:DescribeTable"
+        "dynamodb:DescribeTable",
+        "dynamodb:BatchGetItem"
       ],
       "Resource": [
         "arn:aws:dynamodb:us-east-1:*:table/candidate-positions-dev",

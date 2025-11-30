@@ -374,7 +374,7 @@ async function trainSystem(): Promise<void> {
 
   const startTime = Date.now();
 
-  const candidates = CONFIG.dryRun ? loadCandidatesForTesting(1) : loadCandidates();
+  const candidates = CONFIG.dryRun ? loadCandidatesForTesting() : loadCandidates();
 
   const validation = validateAllCandidates(candidates);
   if (!validation.valid) {

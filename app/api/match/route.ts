@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllCandidatePositions, getQuestions } from '@/lib/db/dynamodb';
+import { getAllCandidatePositions, getQuestionsByIds } from '@/lib/db/dynamodb';
 import { calculateMatches, type UserAnswer } from '@/lib/matching/algorithm';
 import { logProgress, validatePolicyPosition, validateQuestion } from '@/lib/training/utils';
 import { API_LIMITS, POLICY_AREAS } from '@/lib/constants';
@@ -62,9 +62,12 @@ export async function POST(request: NextRequest) {
 
     logProgress('Fetching candidate positions and questions', { answerCount: validAnswers.length });
 
+    // Extract unique question IDs from valid answers for efficient lookup
+    const questionIds = [...new Set(validAnswers.map(a => a.questionId))];
+
     const [candidatePositions, questions] = await Promise.all([
       getAllCandidatePositions(),
-      getQuestions(200),
+      getQuestionsByIds(questionIds), // Efficient O(1) lookup instead of expensive scan
     ]);
 
     if (candidatePositions.length === 0) {

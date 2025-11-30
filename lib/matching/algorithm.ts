@@ -85,6 +85,16 @@ export function calculateMatches(
     return [];
   }
 
+  // Optimization: Create maps for efficient O(1) lookups
+  const questionMap = new Map(questions.map(q => [q.questionId, q]));
+  const positionsByArea = new Map<string, CandidatePosition[]>();
+  for (const pos of candidatePositions) {
+    if (!positionsByArea.has(pos.policyArea)) {
+      positionsByArea.set(pos.policyArea, []);
+    }
+    positionsByArea.get(pos.policyArea)!.push(pos);
+  }
+
   // Map for tracking candidate scores and metadata
   const candidateScores = new Map<string, {
     totalScore: number;
@@ -96,17 +106,15 @@ export function calculateMatches(
 
   // Calculate alignment scores for each user answer
   for (const answer of userAnswers) {
-    // Find corresponding question for normalization
-    const question = questions.find(q => q.questionId === answer.questionId);
+    // O(1) lookup
+    const question = questionMap.get(answer.questionId);
     if (!question) {
       console.warn(`Question not found for answer: ${answer.questionId}`);
       continue;
     }
 
-    // Filter candidate positions matching the policy area
-    const relevantPositions = candidatePositions.filter(
-      pos => pos.policyArea === answer.policyArea
-    );
+    // O(1) lookup
+    const relevantPositions = positionsByArea.get(answer.policyArea) || [];
 
     if (relevantPositions.length === 0) {
       console.warn(`No candidate positions found for policy area: ${answer.policyArea}`);

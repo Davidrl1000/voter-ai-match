@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand, ScanCommand, BatchGetCommand } from '@aws-sdk/lib-dynamodb';
 
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -47,6 +47,40 @@ export async function getQuestions(limit: number = 20): Promise<Question[]> {
 
   const response = await docClient.send(command);
   return (response.Items || []) as Question[];
+}
+
+/**
+ * Efficiently fetch specific questions by their IDs using BatchGetItem
+ * This is much more performant than scanning the entire table
+ */
+export async function getQuestionsByIds(questionIds: string[]): Promise<Question[]> {
+  if (questionIds.length === 0) return [];
+
+  // DynamoDB BatchGetItem has a limit of 100 items per request
+  const batchSize = 100;
+  const batches: string[][] = [];
+
+  for (let i = 0; i < questionIds.length; i += batchSize) {
+    batches.push(questionIds.slice(i, i + batchSize));
+  }
+
+  const allQuestions: Question[] = [];
+
+  for (const batch of batches) {
+    const command = new BatchGetCommand({
+      RequestItems: {
+        [TABLES.questionBank]: {
+          Keys: batch.map(id => ({ questionId: id })),
+        },
+      },
+    });
+
+    const response = await docClient.send(command);
+    const items = response.Responses?.[TABLES.questionBank] || [];
+    allQuestions.push(...(items as Question[]));
+  }
+
+  return allQuestions;
 }
 
 export async function getAllCandidatePositions(): Promise<CandidatePosition[]> {
