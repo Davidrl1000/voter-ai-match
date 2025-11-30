@@ -5,6 +5,7 @@ import path from 'path';
 import OpenAI from 'openai';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import {
   retryWithBackoff,
@@ -95,7 +96,6 @@ const dynamoClient = new DynamoDBClient({
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
 async function extractTextFromPDF(filePath: string): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const dataBuffer = fs.readFileSync(filePath);
   const uint8Array = new Uint8Array(dataBuffer);
   const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
@@ -374,7 +374,7 @@ async function trainSystem(): Promise<void> {
 
   const startTime = Date.now();
 
-  const candidates = CONFIG.dryRun ? loadCandidatesForTesting(3) : loadCandidates();
+  const candidates = CONFIG.dryRun ? loadCandidatesForTesting(1) : loadCandidates();
 
   const validation = validateAllCandidates(candidates);
   if (!validation.valid) {

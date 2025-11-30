@@ -169,6 +169,7 @@ export function validateQuestion(question: Question): boolean {
  */
 export function estimateCost(model: string, tokens: number): number {
   // Pricing as of January 2025 (per 1M tokens)
+  // Source: https://openai.com/api/pricing/
   const pricing: Record<string, { input: number; output: number }> = {
     'gpt-4o-mini': { input: 0.150, output: 0.600 },
     'o1-pro': { input: 15.00, output: 60.00 },

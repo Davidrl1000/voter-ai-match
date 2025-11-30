@@ -4,7 +4,7 @@
  * expected by the training script.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 /**
@@ -114,11 +114,8 @@ export function validateCandidate(candidate: Candidate): {
   errors: string[];
 } {
   const errors: string[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require('fs');
 
-  // Check PDF exists
-  if (!fs.existsSync(candidate.pdfPath)) {
+  if (!existsSync(candidate.pdfPath)) {
     errors.push(`PDF not found: ${candidate.pdfPath}`);
   }
 
