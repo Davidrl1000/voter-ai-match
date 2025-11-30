@@ -6,10 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint && npm run type-check",
+    "type-check": "tsc --noEmit",
+    "train": "NODE_ENV=production DRY_RUN=false tsx scripts/train-system.ts",
+    "train:dev": "NODE_ENV=development DRY_RUN=true tsx scripts/train-system.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.940.0",
+    "@aws-sdk/lib-dynamodb": "^3.940.0",
+    "canvas": "^3.2.0",
+    "dotenv": "^17.2.3",
     "next": "16.0.5",
+    "openai": "^6.9.1",
+    "pdfjs-dist": "^5.4.449",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
@@ -18,9 +27,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
