@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
@@ -13,12 +14,14 @@ interface Candidate {
 }
 
 export default function CandidatesPage() {
-  const candidates: Candidate[] = candidatesData.map((c) => ({
-    name: c.name,
-    party: c.politicalParty,
-    plan: c.plan,
-    site: c.site,
-  })).sort((a, b) => a.name.localeCompare(b.name));
+  const candidates: Candidate[] = useMemo(() => {
+    return candidatesData.map((c) => ({
+      name: c.name,
+      party: c.politicalParty,
+      plan: c.plan,
+      site: c.site,
+    })).sort((a, b) => a.party.localeCompare(b.party));
+  }, []);
 
   return (
     <>
