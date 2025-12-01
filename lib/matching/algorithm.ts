@@ -18,15 +18,18 @@ export interface CandidateMatch {
 }
 
 /**
- * Normalize user answer to a 0-1 scale for matching
+ * Normalize user answer to 0-1 scale for matching
+ *
+ * ERROR HANDLING: Invalid inputs return 0.5 (neutral) to prevent bias and gaming.
+ * Agreement-scale: 1-5 → 0.0-1.0 | Specific-choice: Maps options linearly to 0-1
+ *
  * @param answer - User's answer (number for agreement-scale, string for specific-choice)
- * @param question - Question metadata
- * @returns Normalized value between 0 and 1
+ * @param question - Question metadata with type and options
+ * @returns Normalized value 0-1, or 0.5 for invalid input
  */
 function normalizeAnswer(answer: number | string, question: Question): number {
   if (question.type === 'agreement-scale') {
     const numericAnswer = Number(answer);
-    // Agreement scale: 1-5 -> 0.0-1.0
     if (isNaN(numericAnswer) || numericAnswer < 1 || numericAnswer > 5) {
       console.warn(`Invalid agreement-scale answer: ${answer}. Using neutral 0.5`);
       return 0.5;
@@ -46,7 +49,6 @@ function normalizeAnswer(answer: number | string, question: Question): number {
       return 0.5;
     }
 
-    // Normalize to 0-1 range
     return question.options.length === 1 ? 1.0 : optionIndex / (question.options.length - 1);
   }
 
@@ -55,14 +57,19 @@ function normalizeAnswer(answer: number | string, question: Question): number {
 }
 
 /**
- * Calculate candidate matches based on user answers
- * Uses cosine similarity between answer embeddings and candidate position embeddings,
- * combined with normalized answer values and question weights
+ * Calculate candidate matches using semantic embedding similarity
  *
- * @param userAnswers - Array of user's answers with embeddings
- * @param candidatePositions - Array of candidate positions with embeddings
- * @param questions - Array of questions for normalization metadata
- * @returns Sorted array of candidate matches with scores
+ * Algorithm: Calculates cosine similarity between user answer embeddings and candidate
+ * position embeddings, combines with normalized answers and question weights, then
+ * aggregates to 0-100 scores. Returns candidates sorted by score (highest first).
+ *
+ * Error Handling: Invalid inputs return empty array or neutral values (0.5). All errors
+ * are logged for monitoring. Deterministic and stateless for concurrent execution.
+ *
+ * @param userAnswers - User answers with 1536-dim embeddings from OpenAI
+ * @param candidatePositions - Candidate positions with embeddings
+ * @param questions - Question metadata (types, options, weights)
+ * @returns Candidates sorted by match score (0-100)
  */
 export function calculateMatches(
   userAnswers: UserAnswer[],
