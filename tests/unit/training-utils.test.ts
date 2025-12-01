@@ -117,6 +117,30 @@ describe('Training Utilities - AI Logic', () => {
       // (This is a performance regression test)
       expect(duration).toBeLessThan(1000); // Should take < 1 second
     });
+
+    it('should return 0 for vectors containing NaN', () => {
+      const vec1 = [1, 2, 3];
+      const vec2 = [1, NaN, 3];
+      expect(cosineSimilarity(vec1, vec2)).toBe(0);
+    });
+
+    it('should return 0 for vectors containing Infinity', () => {
+      const vec1 = [1, 2, Infinity];
+      const vec2 = [1, 2, 3];
+      expect(cosineSimilarity(vec1, vec2)).toBe(0);
+    });
+
+    it('should return 0 for vectors containing -Infinity', () => {
+      const vec1 = [1, 2, -Infinity];
+      const vec2 = [1, 2, 3];
+      expect(cosineSimilarity(vec1, vec2)).toBe(0);
+    });
+
+    it('should return 0 when both vectors contain invalid values', () => {
+      const vec1 = [NaN, 2, 3];
+      const vec2 = [1, Infinity, 3];
+      expect(cosineSimilarity(vec1, vec2)).toBe(0);
+    });
   });
 
   describe('validatePolicyPosition', () => {

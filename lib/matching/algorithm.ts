@@ -34,7 +34,8 @@ function normalizeAnswer(answer: number | string, question: Question): number {
       console.warn(`Invalid agreement-scale answer: ${answer}. Using neutral 0.5`);
       return 0.5;
     }
-    return numericAnswer / 5;
+    // Map 1-5 scale to 0-1: 1→0.0, 2→0.25, 3→0.5, 4→0.75, 5→1.0
+    return (numericAnswer - 1) / 4;
   }
 
   if (question.type === 'specific-choice') {
