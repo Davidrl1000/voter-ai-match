@@ -3,6 +3,7 @@ import { getAllCandidatePositions, getQuestionsByIds } from '@/lib/db/dynamodb';
 import { calculateMatches, type UserAnswer } from '@/lib/matching/algorithm';
 import { logProgress, validatePolicyPosition, validateQuestion } from '@/lib/training/utils';
 import { API_LIMITS, POLICY_AREAS } from '@/lib/constants';
+import { recordMatchResult } from '@/lib/db/match-recording';
 
 const MAX_ANSWERS = API_LIMITS.ANSWERS.MAX;
 const VALID_POLICY_AREAS = POLICY_AREAS as readonly string[];
@@ -108,6 +109,15 @@ export async function POST(request: NextRequest) {
       topScore: matches[0]?.score || 0,
       totalMatches: matches.length,
     });
+
+    // Record match result for aggregated stats (non-blocking, fire-and-forget)
+    if (matches.length > 0) {
+      recordMatchResult(matches[0].candidateId, validAnswers.length)
+        .catch(error => {
+          // Log error but don't block the response
+          logProgress('Warning: Failed to record match result', { error: error.message });
+        });
+    }
 
     return NextResponse.json({
       matches: matches.slice(0, API_LIMITS.MATCHES.DEFAULT_RETURN),

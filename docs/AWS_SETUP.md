@@ -43,6 +43,48 @@ aws dynamodb create-table \
 - Partition Key: `questionId` (String) - e.g., "q-economy-001"
 - Attributes: `text`, `policyArea`, `type`, `options`, `embedding`, `weight`
 
+### 3. Match Results Table
+
+Stores individual match results from completed quizzes.
+
+```bash
+aws dynamodb create-table \
+  --table-name match-results-dev \
+  --attribute-definitions AttributeName=resultId,AttributeType=S \
+  --key-schema AttributeName=resultId,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region us-east-1
+```
+
+**Table Structure**:
+- Partition Key: `resultId` (String) - UUID
+- Attributes: `timestamp`, `topCandidateId`, `questionCount`
+
+### 4. Aggregated Stats Table
+
+Stores pre-calculated aggregated statistics using **write sharding** for scalability.
+
+```bash
+aws dynamodb create-table \
+  --table-name aggregated-stats-dev \
+  --attribute-definitions AttributeName=statsId,AttributeType=S \
+  --key-schema AttributeName=statsId,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region us-east-1
+```
+
+**Table Structure**:
+- Partition Key: `statsId` (String) - Sharded: "global-0" to "global-99"
+- Attributes: `totalMatches`, `totalQuestions`, `candidateStats`, `lastUpdated`
+
+**Sharding Architecture**:
+- Uses **100 shards** to distribute writes across partitions
+- Prevents hot partition issues during viral traffic spikes
+- Each shard can handle ~1000 writes/second
+- Total capacity: **100,000 writes/second** (handles 2.5M+ concurrent users)
+- Reads aggregate all shards in parallel using BatchGetCommand
+- Results cached for 30 seconds to reduce read costs
+
 ## IAM Permissions
 
 Create an IAM policy with these permissions:
@@ -65,10 +107,10 @@ Create an IAM policy with these permissions:
         "dynamodb:BatchGetItem"
       ],
       "Resource": [
-        "arn:aws:dynamodb:us-east-1:*:table/candidate-positions-dev",
-        "arn:aws:dynamodb:us-east-1:*:table/question-bank-dev",
-        "arn:aws:dynamodb:us-east-1:*:table/candidate-positions-prod",
-        "arn:aws:dynamodb:us-east-1:*:table/question-bank-prod"
+        "arn:aws:dynamodb:us-east-1:*:table/candidate-positions-*",
+        "arn:aws:dynamodb:us-east-1:*:table/question-bank-*",
+        "arn:aws:dynamodb:us-east-1:*:table/match-results-*",
+        "arn:aws:dynamodb:us-east-1:*:table/aggregated-stats-*"
       ]
     }
   ]
@@ -114,6 +156,22 @@ aws dynamodb create-table \
   --table-name question-bank-prod \
   --attribute-definitions AttributeName=questionId,AttributeType=S \
   --key-schema AttributeName=questionId,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region us-east-1
+
+# Match results (production)
+aws dynamodb create-table \
+  --table-name match-results-prod \
+  --attribute-definitions AttributeName=resultId,AttributeType=S \
+  --key-schema AttributeName=resultId,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region us-east-1
+
+# Aggregated stats (production)
+aws dynamodb create-table \
+  --table-name aggregated-stats-prod \
+  --attribute-definitions AttributeName=statsId,AttributeType=S \
+  --key-schema AttributeName=statsId,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST \
   --region us-east-1
 ```
@@ -176,4 +234,6 @@ To delete tables (careful!):
 ```bash
 aws dynamodb delete-table --table-name candidate-positions-dev
 aws dynamodb delete-table --table-name question-bank-dev
+aws dynamodb delete-table --table-name match-results-dev
+aws dynamodb delete-table --table-name aggregated-stats-dev
 ```

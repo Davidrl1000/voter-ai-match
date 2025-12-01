@@ -29,6 +29,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
   const [aiExplanation, setAiExplanation] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const hasStreamedRef = useRef(false);
+  const hasCalculatedRef = useRef(false);
 
   const streamExplanation = useCallback(async (matchesData: CandidateMatch[]) => {
     // Prevent multiple streams
@@ -81,6 +82,10 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
   useEffect(() => {
     async function calculateMatches() {
+      // Prevent duplicate calculations (React StrictMode in dev calls effects twice)
+      if (hasCalculatedRef.current) return;
+      hasCalculatedRef.current = true;
+
       try {
         const response = await fetch('/api/match', {
           method: 'POST',
@@ -104,6 +109,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error calculating matches');
         setLoading(false);
+        hasCalculatedRef.current = false; // Reset on error to allow retry
       }
     }
 

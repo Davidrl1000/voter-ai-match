@@ -10,6 +10,7 @@ import LoadingSpinner from './LoadingSpinner';
 interface QuizProps {
   onComplete: (answers: UserAnswer[]) => void;
   questionLimit: number;
+  preloadedQuestions?: Question[];
 }
 
 const agreementOptions = [
@@ -20,15 +21,22 @@ const agreementOptions = [
   { value: 5, label: 'Muy de acuerdo' },
 ];
 
-export default function Quiz({ onComplete, questionLimit }: QuizProps) {
-  const [questions, setQuestions] = useState<Question[]>([]);
+export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: QuizProps) {
+  // Initialize questions with preloaded data if available
+  const [questions, setQuestions] = useState<Question[]>(preloadedQuestions || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!preloadedQuestions || preloadedQuestions.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // If questions are preloaded, no need to fetch
+    if (preloadedQuestions && preloadedQuestions.length > 0) {
+      return;
+    }
+
+    // Otherwise, fetch questions from API
     async function loadQuestions() {
       try {
         const response = await fetch(`/api/questions?limit=${questionLimit}`);
@@ -45,7 +53,7 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
     }
 
     loadQuestions();
-  }, [questionLimit]);
+  }, [questionLimit, preloadedQuestions]);
 
   const currentQuestion = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
@@ -155,7 +163,7 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
                 <button
                   key={option.value}
                   onClick={() => setSelectedAnswer(option.value)}
-                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base ${
+                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
                     selectedAnswer === option.value
                       ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -169,7 +177,7 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
                 <button
                   key={idx}
                   onClick={() => setSelectedAnswer(option)}
-                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base ${
+                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
                     selectedAnswer === option
                       ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -186,7 +194,7 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
             <button
               onClick={handleBack}
               disabled={currentIndex === 0}
-              className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all order-1 sm:order-none"
+              className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-1 sm:order-none"
             >
               ← Anterior
             </button>
@@ -195,14 +203,14 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
               <button
                 onClick={handleAnswer}
                 disabled={selectedAnswer === null}
-                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all order-2 sm:order-none"
+                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-2 sm:order-none"
               >
                 {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
               </button>
               {canSubmitEarly && currentIndex < questions.length - 1 && (
                 <button
                   onClick={() => onComplete(answers)}
-                  className="px-5 py-2.5 text-sm text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all whitespace-nowrap order-3 sm:order-none"
+                  className="px-5 py-2.5 text-sm text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all whitespace-nowrap cursor-pointer order-3 sm:order-none"
                 >
                   Finalizar ({answers.length})
                 </button>
