@@ -16,6 +16,8 @@ export const docClient = DynamoDBDocumentClient.from(client);
 const TABLES = {
   candidatePositions: process.env.CANDIDATE_POSITIONS_TABLE || 'candidate-positions-dev',
   questionBank: process.env.QUESTION_BANK_TABLE || 'question-bank-dev',
+  matchResults: process.env.MATCH_RESULTS_TABLE || 'match-results-dev',
+  aggregatedStats: process.env.AGGREGATED_STATS_TABLE || 'aggregated-stats-dev',
 };
 
 export interface Question {
@@ -104,3 +106,22 @@ export async function getCandidatePositions(candidateId: string): Promise<Candid
   const response = await docClient.send(command);
   return (response.Items || []) as CandidatePosition[];
 }
+
+// Phase 6: Analytics & Aggregation
+
+export interface MatchResult {
+  resultId: string; // UUID
+  timestamp: string; // ISO timestamp
+  topCandidateId: string; // Top match candidate ID
+  questionCount: number;
+}
+
+export interface AggregatedStats {
+  statsId: string; // Shard ID (e.g., 'global-0' to 'global-99') or 'global-aggregated' for in-memory aggregated result
+  totalMatches: number;
+  totalQuestions: number; // Sum of all questions answered across all matches
+  candidateStats: Record<string, number>; // candidateId → count
+  lastUpdated: string; // ISO timestamp
+}
+
+export { TABLES };

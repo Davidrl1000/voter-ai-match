@@ -1,17 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import Quiz from '@/components/Quiz';
 import Results from '@/components/Results';
 import type { UserAnswer } from '@/lib/matching/algorithm';
+import type { Question } from '@/lib/db/dynamodb';
 import { API_LIMITS, POLICY_AREAS } from '@/lib/constants';
 
 export default function Home() {
   const [stage, setStage] = useState<'welcome' | 'quiz' | 'results'>('welcome');
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [questionLimit, setQuestionLimit] = useState<number>(API_LIMITS.QUESTIONS.DEFAULT);
+  const [preloadedQuestions, setPreloadedQuestions] = useState<Question[]>([]);
+
+  // Preload questions when component mounts or questionLimit changes
+  useEffect(() => {
+    async function preloadQuestions() {
+      try {
+        const response = await fetch(`/api/questions?limit=${questionLimit}`);
+        if (response.ok) {
+          const data = await response.json();
+          setPreloadedQuestions(data.questions.slice(0, questionLimit));
+        }
+      } catch (error) {
+        console.error('Error preloading questions:', error);
+      }
+    }
+
+    // Only preload when in welcome stage
+    if (stage === 'welcome') {
+      preloadQuestions();
+    }
+  }, [questionLimit, stage]);
 
   const handleStart = () => {
     setStage('quiz');
@@ -31,7 +53,11 @@ export default function Home() {
     return (
       <>
         <Header />
-        <Quiz onComplete={handleComplete} questionLimit={questionLimit} />
+        <Quiz
+          onComplete={handleComplete}
+          questionLimit={questionLimit}
+          preloadedQuestions={preloadedQuestions}
+        />
       </>
     );
   }

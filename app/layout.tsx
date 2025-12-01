@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Flag from "@/components/Flag";
 import GitHubLink from "@/components/GitHubLink";
+import { AggregatedStatsWidget } from "@/components/aggregated-stats-widget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -66,6 +67,7 @@ export default function RootLayout({
         <Flag />
         <GitHubLink />
         {children}
+        <AggregatedStatsWidget />
       </body>
     </html>
   );
