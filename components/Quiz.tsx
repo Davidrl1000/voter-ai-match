@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import type { Question } from '@/lib/db/dynamodb';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
@@ -86,7 +87,7 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white px-4">
+      <div className="flex items-center justify-center min-h-[calc(100vh-7rem)] bg-white px-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md w-full">
           <h2 className="text-red-800 font-semibold mb-2">Error</h2>
           <p className="text-red-600 text-sm">{error}</p>
@@ -100,8 +101,26 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 flex items-center">
+    <div className="min-h-[calc(100vh-7rem)] bg-gray-50 py-6 sm:py-8 px-4 flex items-center">
       <div className="max-w-2xl mx-auto w-full">
+        {/* AI Badge */}
+        <div className="flex justify-center mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-full">
+            <div className="w-3.5 h-3.5">
+              <Image
+                src="/assets/icons/ai-sparkle.svg"
+                alt=""
+                width={14}
+                height={14}
+                className="w-full h-full"
+              />
+            </div>
+            <span className="text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Powered by AI
+            </span>
+          </div>
+        </div>
+
         {/* Progress */}
         <div className="mb-6">
           <div className="bg-white border border-gray-200 rounded-full h-2 overflow-hidden">
@@ -163,31 +182,31 @@ export default function Quiz({ onComplete, questionLimit }: QuizProps) {
           </div>
 
           {/* Navigation */}
-          <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 border-t border-gray-100">
             <button
               onClick={handleBack}
               disabled={currentIndex === 0}
-              className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all order-1 sm:order-none"
             >
               ← Anterior
             </button>
 
             <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={handleAnswer}
+                disabled={selectedAnswer === null}
+                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all order-2 sm:order-none"
+              >
+                {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
+              </button>
               {canSubmitEarly && currentIndex < questions.length - 1 && (
                 <button
                   onClick={() => onComplete(answers)}
-                  className="px-5 py-2.5 text-sm text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all whitespace-nowrap"
+                  className="px-5 py-2.5 text-sm text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all whitespace-nowrap order-3 sm:order-none"
                 >
                   Finalizar ({answers.length})
                 </button>
               )}
-              <button
-                onClick={handleAnswer}
-                disabled={selectedAnswer === null}
-                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
-              </button>
             </div>
           </div>
         </div>

@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
+import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
 import LoadingSpinner from './LoadingSpinner';
 
 interface CandidateMatch {
@@ -188,7 +190,37 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         {/* Top Match */}
         {topMatch && (
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+              {/* Candidate Photo with Flag */}
+              <div className="relative flex-shrink-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/20">
+                  <Image
+                    src={getPhotoPath(topMatch.party)}
+                    alt={topMatch.name}
+                    width={96}
+                    height={96}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+                {/* Party Flag Badge */}
+                <div className="absolute bottom-0 right-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
+                  <Image
+                    src={getLogoPath(topMatch.party)}
+                    alt={topMatch.party}
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Candidate Info */}
               <div className="flex-1">
                 <p className="text-blue-100 text-xs uppercase tracking-wide mb-1">
                   Tu mejor coincidencia
@@ -196,6 +228,8 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                 <h2 className="text-2xl sm:text-3xl font-bold">{topMatch.name}</h2>
                 <p className="text-blue-100 mt-1 text-sm">{topMatch.party}</p>
               </div>
+
+              {/* Score */}
               <div className="text-left sm:text-right">
                 <div className="text-4xl sm:text-5xl font-bold tabular-nums">{Math.round(topMatch.score)}%</div>
                 <p className="text-blue-100 text-xs mt-1">Compatibilidad</p>
@@ -223,40 +257,73 @@ export default function Results({ answers, onRestart }: ResultsProps) {
               key={match.candidateId}
               className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors"
             >
-              <div className="flex items-start gap-3 mb-3">
-                <span className="w-7 h-7 flex items-center justify-center bg-gray-100 text-gray-700 font-semibold rounded-full text-sm flex-shrink-0">
-                  {index + 2}
-                </span>
+              <div className="flex items-start gap-4 mb-3">
+                {/* Candidate Photo with Ranking Badge */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gray-200">
+                    <Image
+                      src={getPhotoPath(match.party)}
+                      alt={match.name}
+                      width={80}
+                      height={80}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  {/* Party Flag Badge */}
+                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
+                    <Image
+                      src={getLogoPath(match.party)}
+                      alt={match.party}
+                      width={24}
+                      height={24}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  {/* Ranking Number */}
+                  <div className="absolute -top-1 -left-1 w-7 h-7 flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full text-sm shadow-md">
+                    {index + 2}
+                  </div>
+                </div>
+
+                {/* Candidate Info */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-gray-900">{match.name}</h3>
-                  <p className="text-gray-600 text-sm">{match.party}</p>
+                  <p className="text-gray-600 text-sm mb-2">{match.party}</p>
+
+                  {/* Progress Bar */}
+                  <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all"
+                      style={{ width: `${match.score}%` }}
+                    ></div>
+                  </div>
+
+                  {/* Top Areas */}
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(match.alignmentByArea)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 3)
+                      .map(([area, score]) => (
+                        <span
+                          key={area}
+                          className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                        >
+                          {POLICY_AREA_LABELS[area]}: {Math.round(score)}%
+                        </span>
+                      ))}
+                  </div>
                 </div>
-                <span className="text-xl font-bold text-gray-900 tabular-nums">
+
+                {/* Score */}
+                <span className="text-xl font-bold text-gray-900 tabular-nums flex-shrink-0">
                   {Math.round(match.score)}%
                 </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-3">
-                <div
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all"
-                  style={{ width: `${match.score}%` }}
-                ></div>
-              </div>
-
-              {/* Top Areas */}
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(match.alignmentByArea)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 3)
-                  .map(([area, score]) => (
-                    <span
-                      key={area}
-                      className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full"
-                    >
-                      {POLICY_AREA_LABELS[area]}: {Math.round(score)}%
-                    </span>
-                  ))}
               </div>
             </div>
           ))}
@@ -264,12 +331,20 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
         {/* Actions */}
         <div className="mt-8 text-center space-y-4">
-          <button
-            onClick={onRestart}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
-          >
-            Volver a empezar
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={onRestart}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
+            >
+              Volver a empezar
+            </button>
+            <Link
+              href="/candidates"
+              className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto inline-flex items-center justify-center"
+            >
+              Ver todos los candidatos
+            </Link>
+          </div>
           <p className="text-xs text-gray-500">
             Estos resultados son solo una guía. Investiga a cada candidato antes de votar.
           </p>

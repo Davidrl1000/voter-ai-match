@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Header from '@/components/Header';
 import Quiz from '@/components/Quiz';
 import Results from '@/components/Results';
 import type { UserAnswer } from '@/lib/matching/algorithm';
@@ -27,15 +28,27 @@ export default function Home() {
   };
 
   if (stage === 'quiz') {
-    return <Quiz onComplete={handleComplete} questionLimit={questionLimit} />;
+    return (
+      <>
+        <Header />
+        <Quiz onComplete={handleComplete} questionLimit={questionLimit} />
+      </>
+    );
   }
 
   if (stage === 'results') {
-    return <Results answers={answers} onRestart={handleRestart} />;
+    return (
+      <>
+        <Header />
+        <Results answers={answers} onRestart={handleRestart} />
+      </>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-8">
+    <>
+      <Header />
+      <div className="min-h-[calc(100vh-7rem)] bg-white flex items-center justify-center px-4 py-8">
       <div className="max-w-3xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-10">
@@ -153,5 +166,6 @@ export default function Home() {
         </div>
       </div>
     </div>
+    </>
   );
 }
