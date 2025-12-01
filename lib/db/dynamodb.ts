@@ -117,7 +117,7 @@ export interface MatchResult {
 }
 
 export interface AggregatedStats {
-  statsId: string; // Always 'global' (single item)
+  statsId: string; // Shard ID (e.g., 'global-0' to 'global-99') or 'global-aggregated' for in-memory aggregated result
   totalMatches: number;
   totalQuestions: number; // Sum of all questions answered across all matches
   candidateStats: Record<string, number>; // candidateId → count

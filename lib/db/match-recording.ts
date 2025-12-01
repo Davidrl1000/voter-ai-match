@@ -58,32 +58,25 @@ export async function recordMatchResult(
     const shardId = getRandomShardId();
 
     try {
-      // Try to update existing shard
+      // Use ADD operation for atomic counters - idempotent and handles initialization
       await docClient.send(new UpdateCommand({
         TableName: TABLES.aggregatedStats,
         Key: { statsId: shardId },
-        UpdateExpression: `
-          SET lastUpdated = :timestamp,
-              totalMatches = if_not_exists(totalMatches, :zero) + :one,
-              totalQuestions = if_not_exists(totalQuestions, :zero) + :questionCount,
-              candidateStats.#candidateId = if_not_exists(candidateStats.#candidateId, :zero) + :one
-        `,
+        UpdateExpression:
+          'ADD totalMatches :one, totalQuestions :questionCount, candidateStats.#candidateId :one SET lastUpdated = :timestamp',
         ExpressionAttributeNames: {
           '#candidateId': topCandidateId,
         },
         ExpressionAttributeValues: {
-          ':zero': 0,
           ':one': 1,
           ':questionCount': questionCount,
           ':timestamp': timestamp,
         },
-        // Ensure item exists (will create if doesn't exist with if_not_exists)
-        ConditionExpression: 'attribute_exists(statsId) OR attribute_not_exists(statsId)',
       }));
     } catch (error: unknown) {
-      // If shard doesn't exist, initialize it and retry
+      // If shard doesn't exist yet, initialize it
       if (error && typeof error === 'object' && 'name' in error && error.name === 'ValidationException') {
-        // Initialize the shard with the first values
+        // Initialize the shard with first values
         await docClient.send(new PutCommand({
           TableName: TABLES.aggregatedStats,
           Item: {
@@ -95,13 +88,12 @@ export async function recordMatchResult(
             },
             lastUpdated: timestamp,
           },
-          // Only create if doesn't exist (avoid race conditions)
           ConditionExpression: 'attribute_not_exists(statsId)',
         })).catch(() => {
-          // Ignore error if another request created it first
-          // The next quiz completion will increment it successfully
+          // Ignore race condition - another request initialized it first
         });
       } else {
+        // Re-throw unexpected errors
         throw error;
       }
     }

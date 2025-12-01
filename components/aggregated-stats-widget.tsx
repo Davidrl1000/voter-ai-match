@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 
 interface TopResult {
@@ -19,7 +19,7 @@ export function AggregatedStatsWidget() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  async function fetchStats() {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch('/api/aggregated-stats');
       if (response.ok) {
@@ -29,7 +29,7 @@ export function AggregatedStatsWidget() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  }
+  }, []);
 
   useEffect(() => {
     // Fetch stats on mount and set up refresh interval
@@ -38,7 +38,7 @@ export function AggregatedStatsWidget() {
     // Refresh every 5 minutes
     const interval = setInterval(fetchStats, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStats]);
 
   if (!stats || stats.totalMatches === 0) {
     return null; // Don't show widget if no data

@@ -14,6 +14,10 @@ const SHARD_COUNT = 100;
 const CACHE_TTL_MS = 30000; // 30 seconds cache
 
 // In-memory cache to reduce DynamoDB reads
+// Note: In serverless environments (Vercel), each function instance has its own cache.
+// This means different users may hit different instances with separate caches,
+// potentially serving slightly stale data (up to TTL). This is acceptable for
+// non-critical statistics.
 let cachedStats: { data: AggregatedStats; timestamp: number } | null = null;
 
 interface StatsResponse {
