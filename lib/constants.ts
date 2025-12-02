@@ -51,8 +51,8 @@ export const AGREEMENT_SCALE = {
  */
 export const API_LIMITS = {
   QUESTIONS: {
-    MIN: 1,
-    MAX: 100,
+    MIN: 15,
+    MAX: 60,
     DEFAULT: 25,
   },
   ANSWERS: {

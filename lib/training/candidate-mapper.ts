@@ -97,7 +97,7 @@ export function loadCandidates(): Candidate[] {
  * Load a subset of candidates for testing
  * @param count - Number of candidates to load (default: 3)
  */
-export function loadCandidatesForTesting(count: number = 3): Candidate[] {
+export function loadCandidatesForTesting(count: number = 5): Candidate[] {
   const allCandidates = loadCandidates();
   const testCandidates = allCandidates.slice(0, count);
 
