@@ -2,22 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllCandidatePositions, getQuestionsByIds } from '@/lib/db/dynamodb';
 import { calculateMatches, type UserAnswer } from '@/lib/matching/algorithm';
 import { logProgress, validatePolicyPosition, validateQuestion } from '@/lib/training/utils';
-import { API_LIMITS, POLICY_AREAS } from '@/lib/constants';
+import { validateUserAnswer } from '@/lib/validation/validators';
+import { API_LIMITS } from '@/lib/constants';
 import { recordMatchResult } from '@/lib/db/match-recording';
 
 const MAX_ANSWERS = API_LIMITS.ANSWERS.MAX;
-const VALID_POLICY_AREAS = POLICY_AREAS as readonly string[];
-
-function validateUserAnswer(answer: UserAnswer): boolean {
-  if (!answer || typeof answer !== 'object') return false;
-  if (!answer.questionId || typeof answer.questionId !== 'string') return false;
-  if (answer.answer === undefined || answer.answer === null) return false;
-  if (!answer.policyArea || !VALID_POLICY_AREAS.includes(answer.policyArea)) return false;
-  if (!Array.isArray(answer.questionEmbedding) || answer.questionEmbedding.length === 0) return false;
-  if (!answer.questionEmbedding.every(val => typeof val === 'number' && !isNaN(val))) return false;
-
-  return true;
-}
 
 export async function POST(request: NextRequest) {
   try {

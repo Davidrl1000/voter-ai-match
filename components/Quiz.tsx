@@ -44,7 +44,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
           throw new Error('Failed to load questions');
         }
         const data = await response.json();
-        setQuestions(data.questions.slice(0, questionLimit));
+        setQuestions(data.questions);
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error loading questions');

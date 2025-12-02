@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import InfoBlock from '@/components/InfoBlock';
 
 export default function NotesPage() {
   return (
@@ -20,23 +21,17 @@ export default function NotesPage() {
 
           {/* Content */}
           <div className="prose prose-gray max-w-none">
-            <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 sm:p-8 mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Sobre esta herramienta
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
+            <InfoBlock title="Sobre esta herramienta">
+              <p className="leading-relaxed mb-4">
                 Votante AI es una herramienta diseñada para ayudarte a entender qué candidato presidencial se alinea mejor con tus valores y prioridades políticas para las elecciones de Costa Rica 2026.
               </p>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="leading-relaxed">
                 A través de un cuestionario basado en inteligencia artificial, comparamos tus respuestas con las posiciones documentadas de cada candidato en áreas clave como economía, salud, educación, seguridad, medio ambiente, políticas sociales e infraestructura.
               </p>
-            </div>
+            </InfoBlock>
 
-            <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 sm:p-8 mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Cómo funciona
-              </h2>
-              <div className="space-y-4 text-gray-700">
+            <InfoBlock title="Cómo funciona">
+              <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">1. Responde el cuestionario</h3>
                   <p className="leading-relaxed">
@@ -56,13 +51,10 @@ export default function NotesPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </InfoBlock>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 sm:p-8 mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Importante
-              </h2>
-              <ul className="space-y-3 text-gray-700">
+            <InfoBlock title="Importante" variant="highlighted">
+              <ul className="space-y-3">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
                   <span className="leading-relaxed">Esta herramienta es solo una <strong>guía informativa</strong>. No sustituye tu propia investigación sobre los candidatos.</span>
@@ -80,19 +72,16 @@ export default function NotesPage() {
                   <span className="leading-relaxed">Tus respuestas son <strong>privadas y no se almacenan</strong>. Todo el procesamiento ocurre en tu dispositivo.</span>
                 </li>
               </ul>
-            </div>
+            </InfoBlock>
 
-            <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Transparencia
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
+            <InfoBlock title="Transparencia">
+              <p className="leading-relaxed mb-4">
                 Este proyecto utiliza inteligencia artificial de OpenAI para generar preguntas y explicaciones, pero el algoritmo de coincidencia es completamente determinista y transparente.
               </p>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="leading-relaxed">
                 El código fuente está disponible públicamente para garantizar la neutralidad y permitir que cualquiera verifique cómo funciona el sistema.
               </p>
-            </div>
+            </InfoBlock>
           </div>
         </div>
       </div>
