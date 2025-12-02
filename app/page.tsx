@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import Quiz from '@/components/Quiz';
@@ -14,29 +14,22 @@ export default function Home() {
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [questionLimit, setQuestionLimit] = useState<number>(API_LIMITS.QUESTIONS.DEFAULT);
   const [preloadedQuestions, setPreloadedQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
-  // Preload questions when component mounts or questionLimit changes
-  useEffect(() => {
-    async function preloadQuestions() {
-      try {
-        const response = await fetch(`/api/questions?limit=${questionLimit}`);
-        if (response.ok) {
-          const data = await response.json();
-          setPreloadedQuestions(data.questions.slice(0, questionLimit));
-        }
-      } catch (error) {
-        console.error('Error preloading questions:', error);
-      }
+  const handleStart = async () => {
+    setIsLoadingQuestions(true);
+
+    try {
+      const response = await fetch(`/api/questions?limit=${questionLimit}`);
+      const data = await response.json();
+
+      setPreloadedQuestions(data.questions);
+      setIsLoadingQuestions(false);
+      setStage('quiz');
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      setIsLoadingQuestions(false);
     }
-
-    // Only preload when in welcome stage
-    if (stage === 'welcome') {
-      preloadQuestions();
-    }
-  }, [questionLimit, stage]);
-
-  const handleStart = () => {
-    setStage('quiz');
   };
 
   const handleComplete = (userAnswers: UserAnswer[]) => {
@@ -147,9 +140,10 @@ export default function Home() {
           {/* CTA Button */}
           <button
             onClick={handleStart}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
+            disabled={isLoadingQuestions}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
           >
-            Comenzar →
+            {isLoadingQuestions ? 'Cargando preguntas...' : 'Comenzar →'}
           </button>
         </div>
 

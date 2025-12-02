@@ -53,7 +53,7 @@ export const API_LIMITS = {
   QUESTIONS: {
     MIN: 1,
     MAX: 100,
-    DEFAULT: 20,
+    DEFAULT: 25,
   },
   ANSWERS: {
     MAX: 100,

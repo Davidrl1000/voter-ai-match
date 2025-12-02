@@ -27,8 +27,10 @@ export async function GET(request: NextRequest) {
 
     logProgress('Fetching questions from database', { limit });
 
-    // Fetch a large pool of questions for random selection (3x requested amount or 300, whichever is larger)
-    const poolSize = Math.max(limit * 3, 300);
+    // Fetch with buffer for validation failures + randomized scan offset
+    // The randomize flag in getQuestions() ensures we start at different positions each time
+    // This gives variety across sessions without fetching a huge pool
+    const poolSize = Math.ceil(limit * 1.3);
     const allQuestions = await getQuestions(poolSize);
 
     if (allQuestions.length === 0) {

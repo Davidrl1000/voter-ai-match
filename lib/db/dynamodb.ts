@@ -41,14 +41,65 @@ export interface CandidatePosition {
   extractedAt: string;
 }
 
-export async function getQuestions(limit: number = 20): Promise<Question[]> {
-  const command = new ScanCommand({
-    TableName: TABLES.questionBank,
-    Limit: limit,
-  });
+export async function getQuestions(limit: number = 20, randomize: boolean = true): Promise<Question[]> {
+  const questions: Question[] = [];
+  const seenIds = new Set<string>(); // Track question IDs to prevent duplicates
+  let lastEvaluatedKey: Record<string, unknown> | undefined = undefined;
 
-  const response = await docClient.send(command);
-  return (response.Items || []) as Question[];
+  // For randomization: skip a random number of items first (0-200)
+  // Kept smaller to avoid going past available questions
+  if (randomize) {
+    const randomSkip = Math.floor(Math.random() * 200);
+    if (randomSkip > 0) {
+      const skipCommand = new ScanCommand({
+        TableName: TABLES.questionBank,
+        Limit: randomSkip,
+      });
+      const skipResponse = await docClient.send(skipCommand);
+      lastEvaluatedKey = skipResponse.LastEvaluatedKey;
+    }
+  }
+
+  // Keep scanning until we have enough questions or no more items
+  while (questions.length < limit) {
+    const command: ScanCommand = new ScanCommand({
+      TableName: TABLES.questionBank,
+      Limit: limit - questions.length, // Only request what we still need
+      ExclusiveStartKey: lastEvaluatedKey,
+    });
+
+    const response = await docClient.send(command);
+    const items = (response.Items || []) as Question[];
+
+    // Filter out duplicates (can happen with wrap-around)
+    for (const item of items) {
+      if (!seenIds.has(item.questionId)) {
+        seenIds.add(item.questionId);
+        questions.push(item);
+
+        // Stop if we have enough (in case Scan returned more than we need)
+        if (questions.length >= limit) {
+          break;
+        }
+      }
+    }
+
+    // If no more items to scan, check if we have enough
+    if (!response.LastEvaluatedKey) {
+      // If we still need more questions and we started with a random offset,
+      // wrap around and scan from the beginning
+      if (questions.length < limit && randomize && lastEvaluatedKey !== undefined) {
+        lastEvaluatedKey = undefined; // Start from beginning
+        randomize = false; // Don't randomize again to avoid infinite loop
+        continue;
+      }
+      break;
+    }
+
+    lastEvaluatedKey = response.LastEvaluatedKey;
+  }
+
+  return questions;
 }
 
 /**
