@@ -53,7 +53,7 @@ export default function InfoModal({ isOpen, onClose, title, children }: InfoModa
                 alt=""
                 width={20}
                 height={20}
-                className="w-full h-full"
+                className="w-full h-full brightness-0 invert cursor-pointer"
               />
             </div>
           </button>

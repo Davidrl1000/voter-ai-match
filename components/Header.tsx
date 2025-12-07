@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Flag from './Flag';
 
 export default function Header() {
@@ -35,7 +36,7 @@ export default function Header() {
 
       {/* Header Bar */}
       <header className="fixed top-12 left-0 right-0 bg-white border-b border-gray-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between relative">
           {/* Logo/Title */}
           <button
             onClick={() => {
@@ -56,41 +57,24 @@ export default function Header() {
           <button
             ref={buttonRef}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer relative"
             aria-label="Toggle menu"
           >
-            <svg
-              className="w-6 h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {isMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
+            <Image
+              src={isMenuOpen ? '/assets/icons/close.svg' : '/assets/icons/hamburger-menu.svg'}
+              alt=""
+              width={24}
+              height={24}
+              className="text-gray-700"
+            />
           </button>
-        </div>
-      </header>
 
-      {/* Dropdown Menu */}
-      {isMenuOpen && (
-        <div
-          ref={menuRef}
-          className="fixed top-28 right-4 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-40 overflow-hidden"
-        >
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div
+              ref={menuRef}
+              className="absolute top-full right-0 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-[60] overflow-hidden"
+            >
           <nav className="py-2">
             <button
               onClick={() => {
@@ -118,7 +102,9 @@ export default function Header() {
             </Link>
           </nav>
         </div>
-      )}
+          )}
+        </div>
+      </header>
 
       {/* Spacer to prevent content from being hidden under fixed header */}
       <div className="h-28" />
