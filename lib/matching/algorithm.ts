@@ -365,8 +365,8 @@ export function calculateMatches(
         consistencyScore = minPercentile * 0.4 + avgPercentile * 0.6;
       }
 
-      // PATH 3: DIRECT SIMILARITY FAILSAFE (original answer-weighted version)
-      // Combines semantic similarity with user stance - achieved 95% coverage
+      // PATH 3: DIRECT SIMILARITY FAILSAFE (correlation-based alignment)
+      // Weights similarity by answer direction while preserving discrimination
       let directSimilarityScore = 0;
       const directAlignments: number[] = [];
 
@@ -383,9 +383,22 @@ export function calculateMatches(
         // Normalize user answer to 0-1 scale
         const normalizedAnswer = normalizeAnswer(answer.answer, question);
 
-        // Direct alignment: high similarity = high match
-        // Weight by how much the user agrees/disagrees
-        const alignmentStrength = rawSimilarity * normalizedAnswer;
+        // Correlation-based alignment:
+        // - Neutral answers (0.5): use raw similarity (preserves discrimination)
+        // - Agreement (>0.5): reward high similarity
+        // - Disagreement (<0.5): penalize high similarity (reward low similarity)
+        let alignmentStrength: number;
+
+        if (Math.abs(normalizedAnswer - 0.5) < 0.01) {
+          // Neutral: use raw similarity for maximum discrimination
+          alignmentStrength = rawSimilarity;
+        } else {
+          // Non-neutral: apply directional weighting
+          const userStance = (normalizedAnswer - 0.5) * 2; // -1 to +1
+          const similarityDeviation = rawSimilarity - 0.5; // -0.5 to +0.5
+          const correlation = userStance * similarityDeviation; // -0.5 to +0.5
+          alignmentStrength = correlation + 0.5; // Map back to 0-1
+        }
 
         directAlignments.push(alignmentStrength);
       }
@@ -408,10 +421,10 @@ export function calculateMatches(
       // TRIPLE PATHWAY SCORING: Use the BEST of the three pathways
       // PATH 1: 70% average percentile + 30% variance (favors specialists)
       // PATH 2: Consistency score (favors generalists)
-      // PATH 3: Direct similarity (failsafe for balanced/comprehensive candidates)
+      // PATH 3: Direct similarity (failsafe - already naturally rewards comprehensive data)
       const path1Score = averagePercentile * 0.7 + varianceBonus + comprehensiveBonus;
       const path2Score = consistencyScore + comprehensiveBonus;
-      const path3Score = directSimilarityScore + comprehensiveBonus;
+      const path3Score = directSimilarityScore; // No bonus - similarity already accounts for data completeness
 
       const finalScore = Math.max(path1Score, path2Score, path3Score);
 

@@ -24,7 +24,7 @@ const MAX_TESTS = 1000;
 const QUESTION_COUNTS = [15, 20, 30]; // Testing with 35-point static bonus
 
 let cachedPositions: CandidatePosition[] | null = null;
-let cachedQuestions: Map<number, Question[]> = new Map();
+const cachedQuestions: Map<number, Question[]> = new Map();
 
 async function loadCandidatePositions(): Promise<CandidatePosition[]> {
   if (!cachedPositions) {

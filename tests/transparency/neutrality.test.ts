@@ -174,7 +174,9 @@ describe('Transparency & Neutrality Tests', () => {
           questionId: 'q1',
           policyArea: 'economy',
           answer: 3,
-          questionEmbedding: [0.5, 0.5, 0.5, 0.5, 0.5],
+          // Use an embedding with moderate similarity to test candidates
+          // to produce scores in the middle range (not extremes)
+          questionEmbedding: [0.3, 0.7, 0.2, 0.8, 0.1],
         },
       ];
 
