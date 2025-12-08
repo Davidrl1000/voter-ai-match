@@ -51,8 +51,8 @@ export const AGREEMENT_SCALE = {
  */
 export const API_LIMITS = {
   QUESTIONS: {
-    ALLOWED_COUNTS: [20, 40, 60] as const,  // Fixed options for question counts
-    DEFAULT: 40,  // Standard option
+    ALLOWED_COUNTS: [15, 20, 30] as const,  // Fixed options for question counts
+    DEFAULT: 20,  // Standard option
   },
   ANSWERS: {
     MAX: 420,  // Match questions max
