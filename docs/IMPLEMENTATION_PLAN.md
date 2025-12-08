@@ -176,9 +176,9 @@ npm install --save-dev @types/pdf-parse
 1. **`.env`** - Add all required environment variables
    ```bash
    OPENAI_API_KEY=sk-...
-   AWS_REGION=us-east-1
-   AWS_ACCESS_KEY_ID=...
-   AWS_SECRET_ACCESS_KEY=...
+   ARCH_AWS_REGION=us-east-1
+   ARCH_AWS_ACCESS_KEY_ID=...
+   ARCH_AWS_SECRET_ACCESS_KEY=...
    CANDIDATE_POSITIONS_TABLE=voter-ai-candidate-positions
    QUESTION_BANK_TABLE=voter-ai-question-bank
    MATCH_RESULTS_TABLE=voter-ai-match-results
@@ -731,7 +731,7 @@ npm install --save-dev msw  # Mock Service Worker
    - Troubleshooting common issues
    - Post-training verification
 
-4. **`docs/AWS_SETUP.md`** - AWS infrastructure setup
+4. **`docs/ARCH_AWS_SETUP.md`** - AWS infrastructure setup
    - IAM user creation
    - DynamoDB table creation
    - S3 bucket configuration
@@ -1059,5 +1059,5 @@ npm run build            # Production build
 ```
 
 **Environment Setup:**
-- See `docs/AWS_SETUP.md` for DynamoDB, IAM, and credentials
+- See `docs/ARCH_AWS_SETUP.md` for DynamoDB, IAM, and credentials
 - Copy `.env.example` to `.env` and add keys

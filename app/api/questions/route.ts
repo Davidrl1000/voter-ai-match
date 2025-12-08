@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     // Fetch random pool with buffer for validation failures + randomized scan offset
     // The randomize flag in getQuestions() ensures we start at different positions each time
     const poolSize = Math.ceil(limit * 1.3);
-    const randomQuestionsPromise = getQuestions(poolSize);
+    const randomQuestionsPromise = getQuestions(poolSize);  
 
     // Fetch both in parallel for performance
     const [comprehensiveQuestions, randomQuestions] = await Promise.all([

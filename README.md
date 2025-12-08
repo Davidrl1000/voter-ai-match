@@ -44,16 +44,16 @@ cp .env.example .env
 See `.env.example` for all required configuration:
 
 - `OPENAI_API_KEY` - Your OpenAI API key
-- `AWS_ACCESS_KEY_ID` - AWS credentials
-- `AWS_SECRET_ACCESS_KEY` - AWS secret
-- `AWS_REGION` - AWS region (default: us-east-1)
+- `ARCH_AWS_ACCESS_KEY_ID` - AWS credentials
+- `ARCH_AWS_SECRET_ACCESS_KEY` - AWS secret
+- `ARCH_AWS_REGION` - AWS region (default: us-east-1)
 - `NODE_ENV` - Environment (development/production)
 - `QUESTION_COUNT` - Number of questions to generate (150 for dev, 1000+ for prod)
 - `DRY_RUN` - Test mode with 3 candidates (true/false)
 
 ### AWS Setup
 
-See [docs/AWS_SETUP.md](docs/AWS_SETUP.md) for detailed AWS configuration.
+See [docs/ARCH_AWS_SETUP.md](docs/ARCH_AWS_SETUP.md) for detailed AWS configuration.
 
 Quick start:
 
@@ -119,7 +119,7 @@ npm start
 └── docs/                  # Documentation
     ├── TRIPLE_PATHWAY_ARCHITECTURE.md
     ├── IMPLEMENTATION_PLAN.md
-    └── AWS_SETUP.md
+    └── ARCH_AWS_SETUP.md
 ```
 
 ## Policy Areas
@@ -155,7 +155,7 @@ npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage
 
 - [Triple Pathway Architecture](docs/TRIPLE_PATHWAY_ARCHITECTURE.md) - Matching algorithm deep dive
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Detailed development roadmap
-- [AWS Setup](docs/AWS_SETUP.md) - AWS configuration guide
+- [AWS Setup](docs/ARCH_AWS_SETUP.md) - AWS configuration guide
 - [Developer Guide](CLAUDE.md) - Code style and patterns
 
 ## License

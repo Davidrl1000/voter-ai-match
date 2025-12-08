@@ -155,9 +155,9 @@ npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage for 15, 20, 30 quest
 ```bash
 # .env file (copy from .env.example)
 OPENAI_API_KEY=sk-...
-AWS_ACCESS_KEY_ID=AKIA...
-AWS_SECRET_ACCESS_KEY=...
-AWS_REGION=us-east-1
+ARCH_AWS_ACCESS_KEY_ID=AKIA...
+ARCH_AWS_SECRET_ACCESS_KEY=...
+ARCH_AWS_REGION=us-east-1
 
 # Optional (defaults shown)
 NODE_ENV=development
@@ -168,7 +168,7 @@ QUESTION_BANK_TABLE=question-bank-dev
 ```
 
 **DynamoDB Tables:**
-- See `docs/AWS_SETUP.md` for table creation
+- See `docs/ARCH_AWS_SETUP.md` for table creation
 - Development: Use `-dev` suffix
 - Production: Remove suffix
 
@@ -274,7 +274,7 @@ npm run train:dev        # Test with 3 candidates first
 ## Resources
 
 - `docs/TRIPLE_PATHWAY_ARCHITECTURE.md` - Matching algorithm deep dive (100% coverage)
-- `docs/AWS_SETUP.md` - DynamoDB setup, IAM permissions
+- `docs/ARCH_AWS_SETUP.md` - DynamoDB setup, IAM permissions
 - `docs/IMPLEMENTATION_PLAN.md` - Complete implementation guide
 - `.env.example` - Environment variable template
 
