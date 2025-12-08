@@ -5,11 +5,19 @@ import Header from '@/components/Header';
 import CandidateCard from '@/components/CandidateCard';
 import candidatesData from '@/data/candidates.json';
 
+interface PdfStats {
+  pageCount: number;
+  wordCount: number;
+  readingTimeMinutes: number;
+  mostUsedWord: string;
+}
+
 interface Candidate {
   name: string;
   party: string;
   plan: string;
   site: string;
+  planStats?: PdfStats;
 }
 
 export default function CandidatesPage() {
@@ -19,6 +27,7 @@ export default function CandidatesPage() {
       party: c.politicalParty,
       plan: c.plan,
       site: c.site,
+      planStats: c.planStats,
     })).sort((a, b) => a.party.localeCompare(b.party));
   }, []);
 
@@ -46,6 +55,7 @@ export default function CandidatesPage() {
                 party={candidate.party}
                 plan={candidate.plan}
                 site={candidate.site}
+                planStats={candidate.planStats}
               />
             ))}
           </div>

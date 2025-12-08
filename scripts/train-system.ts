@@ -5,7 +5,6 @@ import path from 'path';
 import OpenAI from 'openai';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import {
   retryWithBackoff,
@@ -31,6 +30,8 @@ import {
 } from '../lib/training/candidate-mapper';
 
 import { ProgressTracker } from '../lib/training/progress-tracker';
+
+import { extractTextFromPDF } from './utils/pdf-utils';
 
 interface PolicyPosition {
   candidateId: string;
@@ -99,25 +100,6 @@ const dynamoClient = new DynamoDBClient({
 });
 
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
-
-async function extractTextFromPDF(filePath: string): Promise<string> {
-  const dataBuffer = fs.readFileSync(filePath);
-  const uint8Array = new Uint8Array(dataBuffer);
-  const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-  const pdf = await loadingTask.promise;
-
-  let fullText = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items
-      .map(item => ('str' in item ? item.str : ''))
-      .join(' ');
-    fullText += pageText + '\n\n';
-  }
-
-  return fullText;
-}
 
 async function generateEmbedding(text: string): Promise<number[]> {
   return retryWithBackoff(async () => {
@@ -540,7 +522,7 @@ async function trainSystem(): Promise<void> {
 
     try {
       logProgress(`  📄 Extracting text from PDF`);
-      const text = await extractTextFromPDF(candidate.pdfPath);
+      const { text } = await extractTextFromPDF(candidate.pdfPath);
       logProgress(`  ✓ Extracted ${text.length} characters`);
 
       const positions = await extractPolicyPositions(candidate, text, progressTracker);
