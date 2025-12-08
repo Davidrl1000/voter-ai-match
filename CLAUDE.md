@@ -55,7 +55,8 @@ lib/
     └── dynamodb.ts   # Database operations (includes BatchGet)
 
 scripts/
-└── train-system.ts   # Main training script
+├── train-system.ts      # Main training script
+└── audit-coverage.ts    # Coverage verification (100% test)
 ```
 
 ## Code Style & Patterns
@@ -113,17 +114,35 @@ scripts/
 
 ### Question Selection: Static (NOT Adaptive)
 **IMPORTANT:** The system uses **static question selection**, not adaptive:
-- User selects question count (1-100, default 20)
+- User selects question count: **15, 20, or 30 questions**
 - All questions loaded at once via `/api/questions`
 - Questions shown sequentially (no dynamic selection)
-- **Why:** Better UX, simpler code, proven accuracy (20+ questions = 85-90%)
+- **Why:** Better UX, simpler code, proven accuracy
 - See `docs/IMPLEMENTATION_PLAN.md` "Completed Phases Summary" for rationale
 
-### Matching Algorithm
+### Matching Algorithm: Triple Pathway Architecture
+**CRITICAL:** The system uses a **Triple Pathway Architecture** that guarantees 100% candidate coverage (every candidate can rank #1):
+
+**Three Parallel Scoring Pathways:**
+1. **PATH 1 - Percentile Rank Matching**: Favors specialists with strong positions in specific areas
+2. **PATH 2 - Consistency Scoring**: Favors generalists with balanced positions across all areas
+3. **PATH 3 - Direct Similarity**: Favors comprehensive candidates with complete policy coverage
+
+**Final score = MAX(path1, path2, path3)**
+
+**Key Features:**
 - **Cosine similarity** on embeddings (semantic matching)
+- **35-point comprehensive bonus** for candidates with 7/7 policy areas
 - **Optimized with Maps** for O(1) lookups (NOT array.find/filter in loops)
+- **100% coverage verification** via automated audit script
 - **Policy area tracking** for alignment breakdown
-- See `lib/matching/algorithm.ts`
+
+**Documentation:** See `docs/TRIPLE_PATHWAY_ARCHITECTURE.md` for detailed explanation
+
+**Coverage Verification:**
+```bash
+npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage for 15, 20, 30 questions
+```
 
 ### Streaming
 - **React 18+ batching**: Use state updates, not direct DOM manipulation
@@ -192,6 +211,13 @@ npm run lint             # Must pass
 npm run build            # Must succeed
 ```
 
+**Coverage Verification:**
+```bash
+npx tsx scripts/audit-coverage.ts  # Verify 100% candidate coverage
+# Expected: All three question counts (15, 20, 30) achieve 100% coverage
+# This is an ETHICAL REQUIREMENT - all candidates must have fair chance to rank #1
+```
+
 **Training Validation:**
 ```bash
 npm run train:dev        # Test with 3 candidates first
@@ -247,6 +273,7 @@ npm run train:dev        # Test with 3 candidates first
 
 ## Resources
 
+- `docs/TRIPLE_PATHWAY_ARCHITECTURE.md` - Matching algorithm deep dive (100% coverage)
 - `docs/AWS_SETUP.md` - DynamoDB setup, IAM permissions
 - `docs/IMPLEMENTATION_PLAN.md` - Complete implementation guide
 - `.env.example` - Environment variable template

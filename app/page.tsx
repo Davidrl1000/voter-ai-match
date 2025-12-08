@@ -8,7 +8,7 @@ import Results from '@/components/Results';
 import InfoModal from '@/components/InfoModal';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import type { Question } from '@/lib/db/dynamodb';
-import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS } from '@/lib/constants';
+import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '@/lib/constants';
 
 export default function Home() {
   const [stage, setStage] = useState<'welcome' | 'quiz' | 'results'>('welcome');
@@ -114,29 +114,35 @@ export default function Home() {
         <div className="space-y-4 mb-8">
           {/* Question Selector */}
           <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                  {questionLimit}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  preguntas
-                </p>
-              </div>
-
-              <div className="flex-1 w-full">
-                <input
-                  type="range"
-                  min={API_LIMITS.QUESTIONS.MIN}
-                  max={API_LIMITS.QUESTIONS.MAX}
-                  value={questionLimit}
-                  onChange={(e) => setQuestionLimit(Number(e.target.value))}
-                  className="w-full h-2.5 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-blue-600 [&::-webkit-slider-thumb]:to-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110"
-                />
-                <p className="text-xs text-gray-400 mt-2 text-center sm:text-right">
-                  Desliza para ajustar
-                </p>
-              </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+              Elige la cantidad de preguntas
+            </h2>
+            <div className="grid grid-cols-3 gap-3">
+              {QUESTION_OPTIONS.map((option) => (
+                <button
+                  key={option.count}
+                  onClick={() => setQuestionLimit(option.count)}
+                  className={`
+                    p-4 rounded-lg border-2 transition-all duration-200
+                    ${questionLimit === option.count
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                    }
+                  `}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 mb-1">
+                      {option.count}
+                    </div>
+                    <div className={`text-sm font-medium mb-1 ${questionLimit === option.count ? 'text-blue-600' : 'text-gray-700'}`}>
+                      {option.label}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {option.description}
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 

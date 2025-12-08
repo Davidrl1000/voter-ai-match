@@ -6,17 +6,17 @@ AI-powered voter matching system for Costa Rica's 2026 presidential elections. M
 
 - **AI-Powered Analysis**: Extracts policy positions from candidate documents using GPT-4o-mini
 - **Neutral Question Generation**: Creates unbiased questions across 7 policy areas
-- **Transparent Matching**: Deterministic hybrid algorithm (70% embedding similarity + 30% weighted agreement)
-- **Real-time Explanations**: Streaming AI-generated explanations for match results
+- **Triple Pathway Matching**: Three parallel scoring algorithms ensure 100% candidate coverage
+- **100% Fairness Guarantee**: Every candidate can achieve #1 ranking (verified via automated testing)
+- **Real-time Explanations**: Streaming AI-generated explanations for match results (Spanish only)
 - **Open Source**: Public verification of neutrality and methodology
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS v4
-- **AI**: OpenAI API (GPT-4o-mini for dev, o1-pro for production)
+- **AI**: OpenAI API (GPT-4o-mini for explanations, text-embedding-3-small for embeddings)
 - **Database**: AWS DynamoDB (on-demand billing)
-- **PDF Processing**: pdfjs-dist (Mozilla PDF.js)
-- **Deployment**: AWS Amplify
+- **Deployment**: Vercel / AWS
 
 ## Getting Started
 
@@ -79,10 +79,10 @@ aws dynamodb create-table \
 ### Training the System
 
 ```bash
-# Development mode (3 candidates, GPT-4o-mini, ~$0.20)
+# Development mode (3 candidates for testing)
 npm run train:dev
 
-# Production mode (all candidates, o1-pro, ~$20)
+# Production mode (all candidates)
 npm run train
 ```
 
@@ -101,19 +101,23 @@ npm start
 
 ```
 ├── app/                    # Next.js app directory
+│   ├── api/               # API routes (questions, match, explain)
+│   ├── page.tsx           # Main quiz interface
+│   └── globals.css        # Global styles
+├── components/            # React components
 ├── lib/
-│   └── training/          # Training pipeline utilities
-│       ├── utils.ts       # Retry, validation, cost estimation
-│       ├── prompts-es-cr.ts # Spanish prompts for Costa Rica
-│       ├── candidate-mapper.ts # Data transformation
-│       └── progress-tracker.ts # Training progress tracking
+│   ├── matching/          # Triple pathway algorithm
+│   ├── training/          # Training pipeline utilities
+│   ├── db/                # DynamoDB operations
+│   └── constants.ts       # Configuration
 ├── scripts/
-│   └── train-system.ts    # Main training script
+│   ├── train-system.ts    # Main training script
+│   └── audit-coverage.ts  # Coverage verification (100% test)
 ├── data/
-│   └── candidates.json    # Candidate metadata
+│   └── comprehensive-questions.json  # Question bank
 ├── public/assets/docs/    # Candidate PDF documents
-├── types/                 # TypeScript type definitions
 └── docs/                  # Documentation
+    ├── TRIPLE_PATHWAY_ARCHITECTURE.md
     ├── IMPLEMENTATION_PLAN.md
     └── AWS_SETUP.md
 ```
@@ -130,31 +134,34 @@ The system analyzes candidates across 7 policy areas:
 6. **Social** - Social policy and equity
 7. **Infrastructure** - Infrastructure and development
 
-## Cost Estimates
+## Matching Algorithm
 
-### Development (DRY_RUN=true, 3 candidates)
-- Training: ~$0.20 (GPT-4o-mini)
-- Per user: ~$0.00015 (streaming explanation)
-- 5M users: ~$750
+The system uses a **Triple Pathway Architecture** that guarantees 100% candidate coverage:
 
-### Production (all candidates)
-- Training: ~$20 (o1-pro, one-time)
-- Per user: ~$0.00015 (streaming explanation)
-- 5M users: ~$770 total
+- **PATH 1**: Percentile rank matching (favors specialists)
+- **PATH 2**: Consistency scoring (favors generalists)
+- **PATH 3**: Direct similarity scoring (favors comprehensive candidates)
+
+Final score = MAX(path1, path2, path3) + comprehensive bonus
+
+This ensures every candidate can achieve #1 ranking with appropriate user input, maintaining political fairness and neutrality.
+
+**Coverage Verification:**
+```bash
+npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage
+```
 
 ## Documentation
 
+- [Triple Pathway Architecture](docs/TRIPLE_PATHWAY_ARCHITECTURE.md) - Matching algorithm deep dive
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Detailed development roadmap
 - [AWS Setup](docs/AWS_SETUP.md) - AWS configuration guide
+- [Developer Guide](CLAUDE.md) - Code style and patterns
 
 ## License
 
 MIT
 
-## Contributing
+## About
 
-This is an open-source project for Costa Rica's 2026 elections. Contributions welcome!
-
-## Support
-
-For issues or questions, please open an issue on GitHub.
+This project provides a transparent, AI-powered voter matching system for Costa Rica's 2026 presidential elections. The triple pathway architecture ensures fairness by guaranteeing every candidate can achieve top ranking with appropriate voter responses.

@@ -137,12 +137,24 @@ export async function getQuestionsByIds(questionIds: string[]): Promise<Question
 }
 
 export async function getAllCandidatePositions(): Promise<CandidatePosition[]> {
-  const command = new ScanCommand({
-    TableName: TABLES.candidatePositions,
-  });
+  const positions: CandidatePosition[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined = undefined;
 
-  const response = await docClient.send(command);
-  return (response.Items || []) as CandidatePosition[];
+  // Keep scanning until we have all positions
+  do {
+    const command: ScanCommand = new ScanCommand({
+      TableName: TABLES.candidatePositions,
+      ExclusiveStartKey: lastEvaluatedKey,
+    });
+
+    const response = await docClient.send(command);
+    const items = (response.Items || []) as CandidatePosition[];
+    positions.push(...items);
+
+    lastEvaluatedKey = response.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return positions;
 }
 
 export async function getCandidatePositions(candidateId: string): Promise<CandidatePosition[]> {
