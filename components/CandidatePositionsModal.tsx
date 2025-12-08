@@ -110,7 +110,10 @@ export default function CandidatePositionsModal({
                   >
                     <button
                       onClick={() => toggleArea(area)}
-                      className="w-full flex items-center justify-between gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-colors cursor-pointer"
+                      aria-expanded={isExpanded}
+                      aria-controls={`position-${area}`}
+                      aria-label={`${isExpanded ? 'Ocultar' : 'Mostrar'} posición sobre ${POLICY_AREA_LABELS[area]}`}
+                      className="w-full flex items-center justify-between gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-colors cursor-pointer focus-visible:ring-4 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center p-1.5">
@@ -128,6 +131,7 @@ export default function CandidatePositionsModal({
                       </div>
                       <div
                         className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
                       >
                         <Image
                           src="/assets/icons/info-circle.svg"
@@ -141,6 +145,9 @@ export default function CandidatePositionsModal({
 
                     {/* Collapsible Description */}
                     <div
+                      id={`position-${area}`}
+                      role="region"
+                      aria-labelledby={`position-${area}-button`}
                       className={`overflow-hidden transition-all duration-300 ease-in-out ${
                         isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                       }`}

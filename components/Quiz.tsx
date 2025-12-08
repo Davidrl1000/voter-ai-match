@@ -130,13 +130,18 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
   return (
     <div className="min-h-[calc(100vh-7rem)] bg-gray-50 py-6 sm:py-8 px-4 flex items-center">
       <div className="max-w-2xl mx-auto w-full">
+        {/* Screen reader announcement for question changes */}
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          Pregunta {currentIndex + 1} de {questions.length}. {POLICY_AREA_LABELS[currentQuestion.policyArea]}.
+        </div>
+
         {/* AI Badge */}
         <div className="flex justify-center mb-4">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-full">
             <div className="w-3.5 h-3.5">
               <Image
                 src="/assets/icons/ai-sparkle.svg"
-                alt=""
+                alt="Ícono de inteligencia artificial"
                 width={14}
                 height={14}
                 className="w-full h-full"
@@ -150,13 +155,20 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
 
         {/* Progress */}
         <div className="mb-6">
-          <div className="bg-white border border-gray-200 rounded-full h-2 overflow-hidden">
+          <div
+            className="bg-white border border-gray-200 rounded-full h-2 overflow-hidden"
+            role="progressbar"
+            aria-valuenow={currentIndex + 1}
+            aria-valuemin={1}
+            aria-valuemax={questions.length}
+            aria-label={`Progreso del cuestionario: pregunta ${currentIndex + 1} de ${questions.length}`}
+          >
             <div
               className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
+          <p className="text-xs text-gray-500 mt-2 text-center" aria-hidden="true">
             Pregunta {currentIndex + 1} de {questions.length}
           </p>
         </div>
@@ -171,49 +183,62 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
           </div>
 
           {/* Question Text */}
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+          <h2
+            id={`question-${currentIndex}`}
+            className="text-lg sm:text-xl font-semibold text-gray-900 mb-6"
+          >
             {currentQuestion.text}
           </h2>
 
           {/* Answer Options */}
-          <div className="space-y-2.5 mb-6">
-            {currentQuestion.type === 'agreement-scale' ? (
-              agreementOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedAnswer(option.value)}
-                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
-                    selectedAnswer === option.value
-                      ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <span className="font-medium text-gray-900">{option.label}</span>
-                </button>
-              ))
-            ) : (
-              currentQuestion.options?.map((option, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedAnswer(option)}
-                  className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
-                    selectedAnswer === option
-                      ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <span className="font-medium text-gray-900">{option}</span>
-                </button>
-              ))
-            )}
-          </div>
+          <fieldset className="mb-6">
+            <legend className="sr-only">Seleccione su respuesta</legend>
+            <div role="radiogroup" aria-labelledby={`question-${currentIndex}`} className="space-y-2.5">
+              {currentQuestion.type === 'agreement-scale' ? (
+                agreementOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSelectedAnswer(option.value)}
+                    role="radio"
+                    aria-checked={selectedAnswer === option.value}
+                    aria-label={option.label}
+                    className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
+                      selectedAnswer === option.value
+                        ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <span className="font-medium text-gray-900">{option.label}</span>
+                  </button>
+                ))
+              ) : (
+                currentQuestion.options?.map((option, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedAnswer(option)}
+                    role="radio"
+                    aria-checked={selectedAnswer === option}
+                    aria-label={option}
+                    className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
+                      selectedAnswer === option
+                        ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <span className="font-medium text-gray-900">{option}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </fieldset>
 
           {/* Navigation */}
-          <div className="pt-4 border-t border-gray-100">
+          <nav className="pt-4 border-t border-gray-100" aria-label="Navegación del cuestionario">
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
               <button
                 onClick={handleBack}
                 disabled={currentIndex === 0}
+                aria-label={`Ir a la pregunta anterior (${currentIndex} de ${questions.length})`}
                 className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-2 sm:order-1"
               >
                 ← Anterior
@@ -222,12 +247,14 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
               <button
                 onClick={handleAnswer}
                 disabled={selectedAnswer === null}
+                aria-label={currentIndex === questions.length - 1 ? 'Finalizar cuestionario y ver resultados' : `Ir a la siguiente pregunta (${currentIndex + 2} de ${questions.length})`}
+                aria-disabled={selectedAnswer === null}
                 className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-1 sm:order-2"
               >
                 {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
               </button>
             </div>
-          </div>
+          </nav>
         </div>
       </div>
     </div>
