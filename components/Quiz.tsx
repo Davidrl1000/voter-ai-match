@@ -22,7 +22,6 @@ const agreementOptions = [
 ];
 
 export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: QuizProps) {
-  // Initialize questions with preloaded data if available
   const [questions, setQuestions] = useState<Question[]>(preloadedQuestions || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
@@ -68,12 +67,29 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
       questionEmbedding: currentQuestion.embedding,
     };
 
-    const newAnswers = [...answers, answer];
+    let newAnswers;
+    if (currentIndex < answers.length) {
+      // Re-answering a previous question - replace just this answer, keep all others
+      newAnswers = [
+        ...answers.slice(0, currentIndex),
+        answer,
+        ...answers.slice(currentIndex + 1)
+      ];
+    } else {
+      // Answering a new question
+      newAnswers = [...answers, answer];
+    }
     setAnswers(newAnswers);
 
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setSelectedAnswer(null);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+
+      if (newAnswers[nextIndex]) {
+        setSelectedAnswer(newAnswers[nextIndex].answer);
+      } else {
+        setSelectedAnswer(null);
+      }
     } else {
       onComplete(newAnswers);
     }
@@ -81,13 +97,16 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
 
   const handleBack = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setAnswers(answers.slice(0, -1));
-      setSelectedAnswer(null);
+      const previousIndex = currentIndex - 1;
+      setCurrentIndex(previousIndex);
+
+      if (answers[previousIndex]) {
+        setSelectedAnswer(answers[previousIndex].answer);
+      } else {
+        setSelectedAnswer(null);
+      }
     }
   };
-
-  const canSubmitEarly = currentIndex >= 9 && answers.length >= 10;
 
   if (loading) {
     return <LoadingSpinner message="Cargando preguntas..." />;
@@ -208,18 +227,6 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                 {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
               </button>
             </div>
-
-            {/* Early completion link - subtle and less prominent */}
-            {canSubmitEarly && currentIndex < questions.length - 1 && (
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => onComplete(answers)}
-                  className="text-xs text-gray-500 hover:text-gray-700 underline decoration-dotted underline-offset-4 transition-colors cursor-pointer"
-                >
-                  Finalizar test con {answers.length} {answers.length === 1 ? 'respuesta' : 'respuestas'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

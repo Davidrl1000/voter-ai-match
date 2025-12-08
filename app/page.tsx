@@ -9,9 +9,11 @@ import InfoModal from '@/components/InfoModal';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import type { Question } from '@/lib/db/dynamodb';
 import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '@/lib/constants';
+import { Stage } from '@/lib/types/stage';
+import type { Stage as StageType } from '@/lib/types/stage';
 
 export default function Home() {
-  const [stage, setStage] = useState<'welcome' | 'quiz' | 'results'>('welcome');
+  const [stage, setStage] = useState<StageType>(Stage.WELCOME);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [questionLimit, setQuestionLimit] = useState<number>(API_LIMITS.QUESTIONS.DEFAULT);
   const [preloadedQuestions, setPreloadedQuestions] = useState<Question[]>([]);
@@ -28,7 +30,7 @@ export default function Home() {
 
       setPreloadedQuestions(data.questions);
       setIsLoadingQuestions(false);
-      setStage('quiz');
+      setStage(Stage.QUIZ);
     } catch (error) {
       console.error('Error loading questions:', error);
       setIsLoadingQuestions(false);
@@ -37,15 +39,15 @@ export default function Home() {
 
   const handleComplete = (userAnswers: UserAnswer[]) => {
     setAnswers(userAnswers);
-    setStage('results');
+    setStage(Stage.RESULTS);
   };
 
   const handleRestart = () => {
     setAnswers([]);
-    setStage('welcome');
+    setStage(Stage.WELCOME);
   };
 
-  if (stage === 'quiz') {
+  if (stage === Stage.QUIZ) {
     return (
       <>
         <Header />
@@ -58,7 +60,7 @@ export default function Home() {
     );
   }
 
-  if (stage === 'results') {
+  if (stage === Stage.RESULTS) {
     return (
       <>
         <Header />
