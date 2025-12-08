@@ -98,16 +98,18 @@ function selectRegularQuestions(questions: Question[], count: number): Question[
   }
 
   const policyAreas = Array.from(byArea.keys());
-  const minPerArea = 2;
+  const minPerArea = Math.max(1, Math.floor(count / policyAreas.length));
   const maxPerArea = Math.ceil(count / policyAreas.length) + 1;
 
   const selected: Question[] = [];
 
-  // Phase 1: Ensure minimum coverage (2 questions per area)
+  // Phase 1: Ensure minimum coverage per area (proportional to total count)
   for (const area of policyAreas) {
     const areaQuestions = shuffleArray(byArea.get(area) || []);
-    const toSelect = Math.min(minPerArea, areaQuestions.length);
-    selected.push(...areaQuestions.slice(0, toSelect));
+    const toSelect = Math.min(minPerArea, areaQuestions.length, count - selected.length);
+    if (toSelect > 0) {
+      selected.push(...areaQuestions.slice(0, toSelect));
+    }
   }
 
   // Phase 2: Fill remaining slots with random questions

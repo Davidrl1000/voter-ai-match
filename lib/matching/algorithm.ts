@@ -411,19 +411,19 @@ export function calculateMatches(
       }
 
       // COMPREHENSIVE DATA BONUS: Reward candidates with complete position coverage
-      // Optimized to 35 points - achieves 100% coverage for 15, 20, and 30 questions
+      // Reduced from 35 to 20 to prevent score ceiling issues while maintaining fairness
       // This is an ETHICAL REQUIREMENT - all candidates must have fair chance to rank #1
       const candidatePolicyAreas = candidatePositionsMap ? candidatePositionsMap.size : 0;
       const totalPolicyAreas = 7;
       const coverageRatio = candidatePolicyAreas / totalPolicyAreas;
-      const comprehensiveBonus = coverageRatio * 35;
+      const comprehensiveBonus = coverageRatio * 20;
 
       // TRIPLE PATHWAY SCORING: Use the BEST of the three pathways
-      // PATH 1: 70% average percentile + 30% variance (favors specialists)
-      // PATH 2: Consistency score (favors generalists)
+      // PATH 1: 60% average percentile + variance + bonus (favors specialists)
+      // PATH 2: 70% consistency score + bonus (favors generalists)
       // PATH 3: Direct similarity (failsafe - already naturally rewards comprehensive data)
-      const path1Score = averagePercentile * 0.7 + varianceBonus + comprehensiveBonus;
-      const path2Score = consistencyScore + comprehensiveBonus;
+      const path1Score = averagePercentile * 0.6 + varianceBonus + comprehensiveBonus;
+      const path2Score = consistencyScore * 0.7 + comprehensiveBonus;
       const path3Score = directSimilarityScore; // No bonus - similarity already accounts for data completeness
 
       const finalScore = Math.max(path1Score, path2Score, path3Score);

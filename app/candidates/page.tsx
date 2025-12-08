@@ -1,25 +1,44 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import CandidateCard from '@/components/CandidateCard';
 import candidatesData from '@/data/candidates.json';
+
+interface PdfStats {
+  pageCount: number;
+  wordCount: number;
+  readingTimeMinutes: number;
+  mostUsedWord: string;
+}
 
 interface Candidate {
   name: string;
   party: string;
   plan: string;
   site: string;
+  planStats?: PdfStats;
 }
 
 export default function CandidatesPage() {
+  // Cache for loaded positions (keyed by party name)
+  const [positionsCache, setPositionsCache] = useState<Record<string, Record<string, string>>>({});
+
   const candidates: Candidate[] = useMemo(() => {
     return candidatesData.map((c) => ({
       name: c.name,
       party: c.politicalParty,
       plan: c.plan,
       site: c.site,
+      planStats: c.planStats,
     })).sort((a, b) => a.party.localeCompare(b.party));
+  }, []);
+
+  const handlePositionsLoaded = useCallback((partyName: string, positions: Record<string, string>) => {
+    setPositionsCache((prev) => ({
+      ...prev,
+      [partyName]: positions,
+    }));
   }, []);
 
   return (
@@ -46,6 +65,9 @@ export default function CandidatesPage() {
                 party={candidate.party}
                 plan={candidate.plan}
                 site={candidate.site}
+                planStats={candidate.planStats}
+                cachedPositions={positionsCache[candidate.party]}
+                onPositionsLoaded={(positions) => handlePositionsLoaded(candidate.party, positions)}
               />
             ))}
           </div>

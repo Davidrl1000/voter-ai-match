@@ -41,7 +41,7 @@ export default function NotesPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">2. Algoritmo de coincidencia</h3>
                   <p className="leading-relaxed">
-                    El sistema compara tus respuestas con los planes y posiciones públicas documentadas de cada candidato mediante análisis semántico. La comparación es automática y puede contener márgenes de error.
+                    El sistema compara tus respuestas con los planes y posiciones públicas documentadas de cada candidato mediante similitud semántica. La comparación es automática y puede contener márgenes de error.
                   </p>
                 </div>
                 <div>
@@ -76,7 +76,7 @@ export default function NotesPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
                   <span className="leading-relaxed">
-                    Tus respuestas son <strong>privadas y no se almacenan</strong>. El procesamiento ocurre en tu dispositivo y la información no se asocia con tu identidad.
+                    Tus respuestas del cuestionario son <strong>privadas y no se almacenan</strong>. Solo se registran datos agregados y anónimos con fines analíticos (como el candidato con mayor coincidencia) sin asociar la información con tu identidad. Utilizamos herramientas de análisis web estándar para mejorar la experiencia del usuario.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">

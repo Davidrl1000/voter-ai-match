@@ -22,6 +22,14 @@ interface ResultsProps {
   onRestart: () => void;
 }
 
+/**
+ * Format score with one decimal place for better differentiation
+ * Shows 99.7% instead of 100% to maintain clarity between close scores
+ */
+function formatScore(score: number): string {
+  return score.toFixed(1);
+}
+
 export default function Results({ answers, onRestart }: ResultsProps) {
   const [matches, setMatches] = useState<CandidateMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,7 +245,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
               {/* Score */}
               <div className="text-left sm:text-right">
-                <div className="text-4xl sm:text-5xl font-bold tabular-nums">{Math.round(topMatch.score)}%</div>
+                <div className="text-4xl sm:text-5xl font-bold tabular-nums">{formatScore(topMatch.score)}%</div>
                 <p className="text-blue-100 text-xs mt-1">Compatibilidad</p>
               </div>
             </div>
@@ -248,7 +256,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                 {Object.entries(topMatch.alignmentByArea).map(([area, score]) => (
                   <div key={area} className="flex justify-between items-center text-sm">
                     <span className="text-blue-50">{POLICY_AREA_LABELS[area] || area}</span>
-                    <span className="font-semibold tabular-nums">{Math.round(score)}%</span>
+                    <span className="font-semibold tabular-nums">{formatScore(score)}%</span>
                   </div>
                 ))}
               </div>
@@ -320,7 +328,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                           key={area}
                           className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full"
                         >
-                          {POLICY_AREA_LABELS[area]}: {Math.round(score)}%
+                          {POLICY_AREA_LABELS[area]}: {formatScore(score)}%
                         </span>
                       ))}
                   </div>
@@ -328,7 +336,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
                 {/* Score */}
                 <span className="text-xl font-bold text-gray-900 tabular-nums flex-shrink-0">
-                  {Math.round(match.score)}%
+                  {formatScore(match.score)}%
                 </span>
               </div>
             </div>

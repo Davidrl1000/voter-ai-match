@@ -5,22 +5,43 @@ import Image from 'next/image';
 import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
 import CandidatePositionsModal from './CandidatePositionsModal';
 
+interface PdfStats {
+  pageCount: number;
+  wordCount: number;
+  readingTimeMinutes: number;
+  mostUsedWord: string;
+}
+
 interface CandidateCardProps {
   name: string;
   party: string;
   plan: string;
   site: string;
+  planStats?: PdfStats;
+  cachedPositions?: Record<string, string>;
+  onPositionsLoaded?: (positions: Record<string, string>) => void;
 }
 
-// Dummy stats data - will be replaced with real data later
-const DUMMY_STATS = {
-  mostUsedWord: 'desarrollo',
-  characterCount: 125430,
-  wordCount: 18750,
-  pageCount: 87,
-};
+/**
+ * Format reading time into human-readable string
+ */
+function formatReadingTime(minutes: number): string {
+  if (minutes < 60) {
+    return `~${minutes} min`;
+  }
+  const hours = Math.round(minutes / 6) / 10; // Round to 1 decimal
+  return `~${hours} hrs`;
+}
 
-export default function CandidateCard({ name, party, plan, site }: CandidateCardProps) {
+export default function CandidateCard({
+  name,
+  party,
+  plan,
+  site,
+  planStats,
+  cachedPositions,
+  onPositionsLoaded
+}: CandidateCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPositionsModal, setShowPositionsModal] = useState(false);
 
@@ -120,28 +141,38 @@ export default function CandidateCard({ name, party, plan, site }: CandidateCard
                 <p className="text-xs text-gray-600">{party}</p>
               </div>
 
-              {/* Stats - Inline Layout */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
-                  <span className="text-xs text-gray-600">Palabra más usada:</span>
-                  <span className="text-sm font-semibold text-gray-900">{DUMMY_STATS.mostUsedWord}</span>
-                </div>
+              {/* Stats - Ordered from most to least meaningful */}
+              {planStats ? (
+                <div className="space-y-2.5">
+                  {/* 1. Reading time - Most actionable */}
+                  <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-600">Tiempo de lectura:</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatReadingTime(planStats.readingTimeMinutes)}</span>
+                  </div>
 
-                <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
-                  <span className="text-xs text-gray-600">Caracteres:</span>
-                  <span className="text-sm font-semibold text-gray-900">{DUMMY_STATS.characterCount.toLocaleString()}</span>
-                </div>
+                  {/* 2. Pages - Quick length indicator */}
+                  <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-600">Páginas:</span>
+                    <span className="text-sm font-semibold text-gray-900">{planStats.pageCount}</span>
+                  </div>
 
-                <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
-                  <span className="text-xs text-gray-600">Palabras:</span>
-                  <span className="text-sm font-semibold text-gray-900">{DUMMY_STATS.wordCount.toLocaleString()}</span>
-                </div>
+                  {/* 3. Most used term - Topic focus */}
+                  <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-600">Término más usado:</span>
+                    <span className="text-sm font-semibold text-gray-900 capitalize">{planStats.mostUsedWord}</span>
+                  </div>
 
-                <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
-                  <span className="text-xs text-gray-600">Páginas:</span>
-                  <span className="text-sm font-semibold text-gray-900">{DUMMY_STATS.pageCount}</span>
+                  {/* 4. Words - Technical detail */}
+                  <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-600">Palabras:</span>
+                    <span className="text-sm font-semibold text-gray-900">{planStats.wordCount.toLocaleString()}</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm text-gray-500">No hay estadísticas disponibles</p>
+                </div>
+              )}
 
               {/* Back Button */}
               <button
@@ -160,6 +191,8 @@ export default function CandidateCard({ name, party, plan, site }: CandidateCard
         isOpen={showPositionsModal}
         onClose={() => setShowPositionsModal(false)}
         partyName={party}
+        cachedPositions={cachedPositions}
+        onPositionsLoaded={onPositionsLoaded}
       />
     </>
   );

@@ -170,6 +170,36 @@ export async function getCandidatePositions(candidateId: string): Promise<Candid
   return (response.Items || []) as CandidatePosition[];
 }
 
+/**
+ * Generate a candidate ID from party name (same logic as training script)
+ * Creates a URL-safe identifier from the party name
+ */
+function generateCandidateId(partyName: string): string {
+  return partyName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-z0-9]+/g, '-')      // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, '');         // Remove leading/trailing hyphens
+}
+
+/**
+ * Get candidate positions by party name (generates candidateId internally)
+ * Returns positions as a map of policyArea -> position text
+ */
+export async function getCandidatePositionsByParty(partyName: string): Promise<Record<string, string>> {
+  const candidateId = generateCandidateId(partyName);
+  const positions = await getCandidatePositions(candidateId);
+
+  // Transform to a map for easier access
+  const positionsMap: Record<string, string> = {};
+  for (const position of positions) {
+    positionsMap[position.policyArea] = position.position;
+  }
+
+  return positionsMap;
+}
+
 // Phase 6: Analytics & Aggregation
 
 export interface MatchResult {

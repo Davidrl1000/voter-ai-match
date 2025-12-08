@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Select random diverse questions
-    // The selectRandomQuestions function will ALWAYS include 1-2 comprehensive questions
+    // The selectRandomQuestions function will ALWAYS include ALL comprehensive questions (up to 4)
     const selectedQuestions = selectRandomQuestions(validQuestions, limit);
 
     logProgress('Questions selected successfully', {

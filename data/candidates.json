@@ -6,7 +6,13 @@
     "plan": "ACRM.pdf",
     "politicalParty": "Aquí Costa Rica Manda",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-ACRM",
-    "slogan": "Unidos por la libertad, la justicia y la prosperidad para todos"
+    "slogan": "Unidos por la libertad, la justicia y la prosperidad para todos",
+    "planStats": {
+      "pageCount": 66,
+      "wordCount": 12839,
+      "readingTimeMinutes": 65,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "CAC.jpg",
@@ -15,7 +21,13 @@
     "plan": "CAC.pdf",
     "politicalParty": "Coalición Agenda Ciudadana",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-CAC",
-    "slogan": "Desde la Coalición Agenda Ciudadana, impulsamos una Costa Rica segura, equitativa y más sostenible"
+    "slogan": "Desde la Coalición Agenda Ciudadana, impulsamos una Costa Rica segura, equitativa y más sostenible",
+    "planStats": {
+      "pageCount": 208,
+      "wordCount": 29643,
+      "readingTimeMinutes": 149,
+      "mostUsedWord": "personas"
+    }
   },
   {
     "candidate": "CDS.jpg",
@@ -24,7 +36,13 @@
     "plan": "CDS.pdf",
     "politicalParty": "Centro Democrático y Social",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-CDS",
-    "slogan": "Llegó la ley"
+    "slogan": "Llegó la ley",
+    "planStats": {
+      "pageCount": 160,
+      "wordCount": 30419,
+      "readingTimeMinutes": 153,
+      "mostUsedWord": "nacional"
+    }
   },
   {
     "candidate": "CR1.jpg",
@@ -33,7 +51,13 @@
     "plan": "CR1.pdf",
     "politicalParty": "Costa Rica Primero",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-CR1",
-    "slogan": "La esperanza que necesitás, el cambio que merecés"
+    "slogan": "La esperanza que necesitás, el cambio que merecés",
+    "planStats": {
+      "pageCount": 66,
+      "wordCount": 8422,
+      "readingTimeMinutes": 43,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "FA.jpg",
@@ -42,7 +66,13 @@
     "plan": "FA.pdf",
     "politicalParty": "Frente Amplio",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-FA",
-    "slogan": "Por la Costa Rica que merecemos"
+    "slogan": "Por la Costa Rica que merecemos",
+    "planStats": {
+      "pageCount": 193,
+      "wordCount": 51495,
+      "readingTimeMinutes": 258,
+      "mostUsedWord": "personas"
+    }
   },
   {
     "candidate": "PA.jpg",
@@ -51,7 +81,13 @@
     "plan": "PA.pdf",
     "politicalParty": "Partido Avanza",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PA",
-    "slogan": "El futuro de Costa Rica, avanza"
+    "slogan": "El futuro de Costa Rica, avanza",
+    "planStats": {
+      "pageCount": 42,
+      "wordCount": 9170,
+      "readingTimeMinutes": 46,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "PDLCT.jpg",
@@ -60,7 +96,13 @@
     "plan": "PDLCT.pdf",
     "politicalParty": "Partido de la Clase Trabajadora",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PDLCT",
-    "slogan": "Nuestras vidas valen más que sus ganancias"
+    "slogan": "Nuestras vidas valen más que sus ganancias",
+    "planStats": {
+      "pageCount": 39,
+      "wordCount": 8773,
+      "readingTimeMinutes": 44,
+      "mostUsedWord": "personas"
+    }
   },
   {
     "candidate": "PEL.jpg",
@@ -69,7 +111,13 @@
     "plan": "PEL.pdf",
     "politicalParty": "Partido Esperanza y Libertad",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PEL",
-    "slogan": "Con esperanza construiremos nuestra libertad"
+    "slogan": "Con esperanza construiremos nuestra libertad",
+    "planStats": {
+      "pageCount": 64,
+      "wordCount": 7831,
+      "readingTimeMinutes": 40,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "PEN.jpg",
@@ -78,7 +126,13 @@
     "plan": "PEN.pdf",
     "politicalParty": "Partido Esperanza Nacional",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PEN",
-    "slogan": "El Partido Esperanza Nacional es un movimiento político de personas comprometidas con Costa Rica"
+    "slogan": "El Partido Esperanza Nacional es un movimiento político de personas comprometidas con Costa Rica",
+    "planStats": {
+      "pageCount": 102,
+      "wordCount": 16083,
+      "readingTimeMinutes": 81,
+      "mostUsedWord": "nacional"
+    }
   },
   {
     "candidate": "PIN.jpg",
@@ -87,7 +141,13 @@
     "plan": "PIN.pdf",
     "politicalParty": "Partido Integración Nacional",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PIN",
-    "slogan": "El PIN impulsa una auténtica Democracia Participativa"
+    "slogan": "El PIN impulsa una auténtica Democracia Participativa",
+    "planStats": {
+      "pageCount": 57,
+      "wordCount": 9386,
+      "readingTimeMinutes": 47,
+      "mostUsedWord": "nacional"
+    }
   },
   {
     "candidate": "PJSC.jpg",
@@ -96,7 +156,13 @@
     "plan": "PJSC.pdf",
     "politicalParty": "Partido Justicia Social Costarricense",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PJSC",
-    "slogan": "Costa Rica somos todos"
+    "slogan": "Costa Rica somos todos",
+    "planStats": {
+      "pageCount": 54,
+      "wordCount": 8730,
+      "readingTimeMinutes": 44,
+      "mostUsedWord": "social"
+    }
   },
   {
     "candidate": "PLN.jpg",
@@ -105,7 +171,13 @@
     "plan": "PLN.pdf",
     "politicalParty": "Partido Liberación Nacional",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PLN",
-    "slogan": "Una democracia que resuelve"
+    "slogan": "Una democracia que resuelve",
+    "planStats": {
+      "pageCount": 58,
+      "wordCount": 10497,
+      "readingTimeMinutes": 53,
+      "mostUsedWord": "nacional"
+    }
   },
   {
     "candidate": "PLP.jpg",
@@ -114,7 +186,13 @@
     "plan": "PLP.pdf",
     "politicalParty": "Partido Liberal Progresista",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PLP",
-    "slogan": "Trabajamos por una Costa Rica próspera, libre y segura para todos"
+    "slogan": "Trabajamos por una Costa Rica próspera, libre y segura para todos",
+    "planStats": {
+      "pageCount": 176,
+      "wordCount": 52660,
+      "readingTimeMinutes": 264,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "PNG.jpg",
@@ -123,7 +201,13 @@
     "plan": "PNG.pdf",
     "politicalParty": "Partido Nueva Generación",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PNG",
-    "slogan": "Ideas que crecen, país que avanza"
+    "slogan": "Ideas que crecen, país que avanza",
+    "planStats": {
+      "pageCount": 211,
+      "wordCount": 43974,
+      "readingTimeMinutes": 220,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "PNR.jpg",
@@ -132,7 +216,13 @@
     "plan": "PNR.pdf",
     "politicalParty": "Partido Nueva República",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PNR",
-    "slogan": "Una sola Costa Rica"
+    "slogan": "Una sola Costa Rica",
+    "planStats": {
+      "pageCount": 213,
+      "wordCount": 52896,
+      "readingTimeMinutes": 265,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "PPSO.jpg",
@@ -141,7 +231,13 @@
     "plan": "PPSO.pdf",
     "politicalParty": "Partido Pueblo Soberano",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PPSO",
-    "slogan": "Valientes Fuertes y Unidos"
+    "slogan": "Valientes Fuertes y Unidos",
+    "planStats": {
+      "pageCount": 88,
+      "wordCount": 12864,
+      "readingTimeMinutes": 65,
+      "mostUsedWord": "nacional"
+    }
   },
   {
     "candidate": "PPSD.jpg",
@@ -150,7 +246,13 @@
     "plan": "PPSD.pdf",
     "politicalParty": "Partido Progreso Social Democrático",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PPSD",
-    "slogan": "Somos Progreso"
+    "slogan": "Somos Progreso",
+    "planStats": {
+      "pageCount": 125,
+      "wordCount": 24042,
+      "readingTimeMinutes": 121,
+      "mostUsedWord": "costa rica"
+    }
   },
   {
     "candidate": "PUCD.jpg",
@@ -159,7 +261,13 @@
     "plan": "PUCD.pdf",
     "politicalParty": "Partido Unión Costarricense Democrática",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PUCD",
-    "slogan": "Costa Rica merece más"
+    "slogan": "Costa Rica merece más",
+    "planStats": {
+      "pageCount": 20,
+      "wordCount": 3753,
+      "readingTimeMinutes": 19,
+      "mostUsedWord": "personas"
+    }
   },
   {
     "candidate": "PUSC.jpg",
@@ -168,7 +276,13 @@
     "plan": "PUSC.pdf",
     "politicalParty": "Partido Unidad Social Cristiana",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-PUSC",
-    "slogan": "Juntos somos más fuertes"
+    "slogan": "Juntos somos más fuertes",
+    "planStats": {
+      "pageCount": 123,
+      "wordCount": 27679,
+      "readingTimeMinutes": 139,
+      "mostUsedWord": "nacional"
+    }
   },
   {
     "candidate": "UP.jpg",
@@ -177,6 +291,12 @@
     "plan": "UP.pdf",
     "politicalParty": "Unidos Podemos",
     "site": "https://www.tse.go.cr/fichas/candidaturas/P/p-UP",
-    "slogan": "El siguiente paso"
+    "slogan": "El siguiente paso",
+    "planStats": {
+      "pageCount": 147,
+      "wordCount": 25587,
+      "readingTimeMinutes": 128,
+      "mostUsedWord": "costa rica"
+    }
   }
 ]
