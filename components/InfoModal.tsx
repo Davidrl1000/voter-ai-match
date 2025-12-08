@@ -50,8 +50,7 @@ export default function InfoModal({ isOpen, onClose, title, children }: InfoModa
             <div className="w-5 h-5">
               <Image
                 src="/assets/icons/close.svg"
-                alt=""
-                width={20}
+                alt="Cerrar"
                 height={20}
                 className="w-full h-full brightness-0 invert cursor-pointer"
               />

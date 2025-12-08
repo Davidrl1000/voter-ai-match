@@ -179,7 +179,7 @@ export default function Home() {
               <div className="w-3 h-3">
                 <Image
                   src="/assets/icons/info-circle.svg"
-                  alt=""
+                  alt="Información"
                   width={12}
                   height={12}
                   className="w-full h-full"
@@ -206,7 +206,7 @@ export default function Home() {
           <div className="w-3.5 h-3.5">
             <Image
               src="/assets/icons/lock.svg"
-              alt=""
+              alt="Candado"
               width={14}
               height={14}
               className="w-full h-full"
