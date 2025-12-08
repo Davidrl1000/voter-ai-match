@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import CandidateCard from '@/components/CandidateCard';
 import candidatesData from '@/data/candidates.json';
@@ -34,12 +34,12 @@ export default function CandidatesPage() {
     })).sort((a, b) => a.party.localeCompare(b.party));
   }, []);
 
-  const handlePositionsLoaded = (partyName: string, positions: Record<string, string>) => {
+  const handlePositionsLoaded = useCallback((partyName: string, positions: Record<string, string>) => {
     setPositionsCache((prev) => ({
       ...prev,
       [partyName]: positions,
     }));
-  };
+  }, []);
 
   return (
     <>

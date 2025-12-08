@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import type { Question } from '@/lib/db/dynamodb';
 import type { UserAnswer } from '@/lib/matching/algorithm';
@@ -57,7 +57,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
   const currentQuestion = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  const handleAnswer = () => {
+  const handleAnswer = useCallback(() => {
     if (selectedAnswer === null || !currentQuestion) return;
 
     const answer: UserAnswer = {
@@ -93,9 +93,9 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
     } else {
       onComplete(newAnswers);
     }
-  };
+  }, [selectedAnswer, currentQuestion, currentIndex, answers, questions.length, onComplete]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (currentIndex > 0) {
       const previousIndex = currentIndex - 1;
       setCurrentIndex(previousIndex);
@@ -106,7 +106,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
         setSelectedAnswer(null);
       }
     }
-  };
+  }, [currentIndex, answers]);
 
   if (loading) {
     return <LoadingSpinner message="Cargando preguntas..." />;
