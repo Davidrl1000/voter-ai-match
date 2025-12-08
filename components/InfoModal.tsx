@@ -51,7 +51,7 @@ export default function InfoModal({ isOpen, onClose, title, children }: InfoModa
               <Image
                 src="/assets/icons/close.svg"
                 alt=""
-                width={20}
+                alt="Cerrar"
                 height={20}
                 className="w-full h-full"
               />
