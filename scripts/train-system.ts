@@ -262,7 +262,7 @@ async function generateQuestionsForArea(
           options: q.options,
           embedding,
           weight: 1.0,
-          biasScore: 10,
+          biasScore: biasCheck.score,
         };
 
         if (validateQuestion(question)) {
