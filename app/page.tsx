@@ -5,9 +5,10 @@ import Image from 'next/image';
 import Header from '@/components/Header';
 import Quiz from '@/components/Quiz';
 import Results from '@/components/Results';
+import InfoModal from '@/components/InfoModal';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import type { Question } from '@/lib/db/dynamodb';
-import { API_LIMITS, POLICY_AREAS } from '@/lib/constants';
+import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS } from '@/lib/constants';
 
 export default function Home() {
   const [stage, setStage] = useState<'welcome' | 'quiz' | 'results'>('welcome');
@@ -15,6 +16,8 @@ export default function Home() {
   const [questionLimit, setQuestionLimit] = useState<number>(API_LIMITS.QUESTIONS.DEFAULT);
   const [preloadedQuestions, setPreloadedQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [showAreasModal, setShowAreasModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleStart = async () => {
     setIsLoadingQuestions(true);
@@ -158,14 +161,26 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-colors">
+          <button
+            onClick={() => setShowAreasModal(true)}
+            className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95"
+          >
             <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1 tabular-nums">
               {POLICY_AREAS.length}
             </div>
-            <div className="text-xs text-blue-700">
-              Áreas
+            <div className="text-xs text-blue-700 flex items-center justify-center gap-1">
+              <span>Áreas</span>
+              <div className="w-3 h-3">
+                <Image
+                  src="/assets/icons/info-circle.svg"
+                  alt="Información"
+                  width={12}
+                  height={12}
+                  className="w-full h-full"
+                />
+              </div>
             </div>
-          </div>
+          </button>
 
           <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4 text-center hover:border-gray-300 transition-colors">
             <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 tabular-nums">
@@ -178,12 +193,120 @@ export default function Home() {
         </div>
 
         {/* Privacy Note */}
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          <span>Privado y seguro</span>
-        </div>
+        <button
+          onClick={() => setShowPrivacyModal(true)}
+          className="flex items-center justify-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer mx-auto"
+        >
+          <div className="w-3.5 h-3.5">
+            <Image
+              src="/assets/icons/lock.svg"
+              alt="Candado"
+              width={14}
+              height={14}
+              className="w-full h-full"
+            />
+          </div>
+          <span className="underline decoration-dotted underline-offset-2">Privado y seguro</span>
+        </button>
+
+        {/* Policy Areas Modal */}
+        <InfoModal
+          isOpen={showAreasModal}
+          onClose={() => setShowAreasModal(false)}
+          title="Áreas de Política"
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 mb-4">
+              Analizamos tus respuestas en estas 7 áreas clave de política costarricense:
+            </p>
+            <div className="space-y-2">
+              {[...POLICY_AREAS]
+                .sort((a, b) => POLICY_AREA_LABELS[a].localeCompare(POLICY_AREA_LABELS[b]))
+                .map((area) => (
+                  <div
+                    key={area}
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg"
+                  >
+                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center p-1.5">
+                      <Image
+                        src={`/assets/icons/${area}.svg`}
+                        alt=""
+                        width={20}
+                        height={20}
+                        className="w-full h-full brightness-0 invert"
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {POLICY_AREA_LABELS[area]}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </InfoModal>
+
+        {/* Privacy Modal */}
+        <InfoModal
+          isOpen={showPrivacyModal}
+          onClose={() => setShowPrivacyModal(false)}
+          title="Privado y Seguro"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center p-2">
+                <Image
+                  src="/assets/icons/lock.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-full h-full brightness-0 invert"
+                />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Tus datos no se guardan</h3>
+                <p className="text-sm text-gray-600">
+                  Todas tus respuestas se procesan localmente en tu navegador. No guardamos tu información personal ni tus respuestas.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center p-2">
+                <Image
+                  src="/assets/icons/security.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-full h-full brightness-0 invert"
+                />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">100% anónimo</h3>
+                <p className="text-sm text-gray-600">
+                  No te pedimos correo, nombre ni información de contacto. Tu identidad permanece completamente anónima.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center p-2">
+                <Image
+                  src="/assets/icons/clipboard-check.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-full h-full brightness-0 invert"
+                />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Sin rastreo</h3>
+                <p className="text-sm text-gray-600">
+                  No usamos cookies de rastreo ni analíticas invasivas. Tu navegación es privada.
+                </p>
+              </div>
+            </div>
+          </div>
+        </InfoModal>
       </div>
     </div>
     </>

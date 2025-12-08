@@ -190,32 +190,36 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
           </div>
 
           {/* Navigation */}
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 border-t border-gray-100">
-            <button
-              onClick={handleBack}
-              disabled={currentIndex === 0}
-              className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-1 sm:order-none"
-            >
-              ← Anterior
-            </button>
+          <div className="pt-4 border-t border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <button
+                onClick={handleBack}
+                disabled={currentIndex === 0}
+                className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-2 sm:order-1"
+              >
+                ← Anterior
+              </button>
 
-            <div className="flex flex-col sm:flex-row gap-2.5">
               <button
                 onClick={handleAnswer}
                 disabled={selectedAnswer === null}
-                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-2 sm:order-none"
+                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-1 sm:order-2"
               >
                 {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
               </button>
-              {canSubmitEarly && currentIndex < questions.length - 1 && (
+            </div>
+
+            {/* Early completion link - subtle and less prominent */}
+            {canSubmitEarly && currentIndex < questions.length - 1 && (
+              <div className="mt-4 text-center">
                 <button
                   onClick={() => onComplete(answers)}
-                  className="px-5 py-2.5 text-sm text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all whitespace-nowrap cursor-pointer order-3 sm:order-none"
+                  className="text-xs text-gray-500 hover:text-gray-700 underline decoration-dotted underline-offset-4 transition-colors cursor-pointer"
                 >
-                  Finalizar ({answers.length})
+                  Finalizar test con {answers.length} {answers.length === 1 ? 'respuesta' : 'respuestas'}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

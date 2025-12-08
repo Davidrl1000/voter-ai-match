@@ -2,6 +2,7 @@
   "name": "voter-ai-match",
   "version": "0.1.0",
   "private": true,
+  "author": "David Rojas L.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -13,9 +13,10 @@ import {
   validateQuestion,
   estimateCost,
   logProgress,
-  chunkText,
-  detectBiasIndicators
+  chunkText
 } from '../lib/training/utils';
+
+import { checkQuestionNeutrality, formatBiasCheckSummary } from '../lib/neutrality/bias-checker';
 
 import {
   POLICY_EXTRACTION_PROMPT,
@@ -61,7 +62,7 @@ const CONFIG = {
   backoffMs: 1000,
   delayBetweenCalls: 1000,
   questionCount: parseInt(process.env.QUESTION_COUNT || '150'),
-  questionsPerPolicyArea: Math.floor(parseInt(process.env.QUESTION_COUNT || '150') / 7),
+  questionsPerPolicyArea: Math.ceil(parseInt(process.env.QUESTION_COUNT || '150') / 7),
   chunkSize: 2000,
   chunkOverlap: 200,
   policyAreas: ['economy', 'healthcare', 'education', 'security', 'environment', 'social', 'infrastructure'],
@@ -216,74 +217,115 @@ async function generateQuestionsForArea(
 ): Promise<Question[]> {
   logProgress(`Generating ${questionCount} questions for ${policyArea}`);
 
-  const prompt = QUESTION_GENERATION_PROMPT
-    .replace(/{policyArea}/g, policyArea)
-    .replace(/{questionCount}/g, String(questionCount));
+  const maxAttempts = 3; // Max attempts to generate neutral questions
+  let attempt = 0;
+  const validQuestions: Question[] = [];
+  let nextQuestionNumber = 1; // Track next available question number
 
-  try {
-    const response = await retryWithBackoff(async () => {
-      return await openai.chat.completions.create({
-        model: CONFIG.model.questions,
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      });
-    }, CONFIG.retries, CONFIG.backoffMs);
+  while (validQuestions.length < questionCount && attempt < maxAttempts) {
+    attempt++;
+    const needed = questionCount - validQuestions.length;
 
-    const content = response.choices[0].message.content || '{"questions":[]}';
-    const parsed = JSON.parse(content);
-    const rawQuestions = parsed.questions || [];
+    logProgress(`  Attempt ${attempt}: Generating ${needed} questions`);
 
-    const questions: Question[] = [];
+    const prompt = QUESTION_GENERATION_PROMPT
+      .replace(/{policyArea}/g, policyArea)
+      .replace(/{questionCount}/g, String(needed));
 
-    for (let i = 0; i < rawQuestions.length; i++) {
-      const q = rawQuestions[i];
-      const questionId = `q-${policyArea}-${String(i + 1).padStart(3, '0')}`;
-      const embedding = await generateEmbedding(q.text);
+    try {
+      const response = await retryWithBackoff(async () => {
+        return await openai.chat.completions.create({
+          model: CONFIG.model.questions,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+        });
+      }, CONFIG.retries, CONFIG.backoffMs);
 
-      const biasIndicators = detectBiasIndicators(q.text);
-      if (biasIndicators.length > 0) {
-        console.warn(`    Bias indicators in question ${questionId}:`, biasIndicators);
+      const content = response.choices[0].message.content || '{"questions":[]}';
+      const parsed = JSON.parse(content);
+      const rawQuestions = parsed.questions || [];
+
+      const batchQuestions: Question[] = [];
+
+      for (let i = 0; i < rawQuestions.length; i++) {
+        const q = rawQuestions[i];
+        const questionId = `q-${policyArea}-${String(nextQuestionNumber).padStart(3, '0')}`;
+        nextQuestionNumber++; // Increment for next question
+
+        const embedding = await generateEmbedding(q.text);
+
+        const question: Question = {
+          questionId,
+          policyArea,
+          text: q.text,
+          type: q.type || q.format,
+          options: q.options,
+          embedding,
+          weight: 1.0,
+          biasScore: biasCheck.score,
+        };
+
+        if (validateQuestion(question)) {
+          batchQuestions.push(question);
+        } else {
+          console.warn(`    Invalid question ${questionId}, skipping`);
+        }
       }
 
-      const question: Question = {
-        questionId,
+      // Run bias check on this batch
+      if (batchQuestions.length > 0) {
+        const biasCheck = await checkQuestionNeutrality(batchQuestions);
+
+        if (biasCheck.issues.length > 0) {
+          logProgress(`  ⚠️  Bias check found ${biasCheck.issues.length} issues (score: ${biasCheck.score}/100)`);
+
+          // Filter out flagged questions
+          const flaggedIds = new Set(biasCheck.issues.map(issue => issue.questionId));
+          const neutralQuestions = batchQuestions.filter(q => !flaggedIds.has(q.questionId));
+
+          logProgress(`  ✓ Keeping ${neutralQuestions.length}/${batchQuestions.length} neutral questions`);
+
+          for (const issue of biasCheck.issues.slice(0, 3)) {
+            logProgress(`    - [${issue.severity}] ${issue.description}`);
+          }
+          if (biasCheck.issues.length > 3) {
+            logProgress(`    ... and ${biasCheck.issues.length - 3} more issues`);
+          }
+
+          validQuestions.push(...neutralQuestions);
+        } else {
+          logProgress(`  ✓ All ${batchQuestions.length} questions passed bias check (score: ${biasCheck.score}/100)`);
+          validQuestions.push(...batchQuestions);
+        }
+      }
+
+      progressTracker.updateQuestionGeneration(policyArea, validQuestions.length, questionCount);
+
+      const tokens = response.usage?.total_tokens || 0;
+      const cost = estimateCost(CONFIG.model.questions, tokens);
+      progressTracker.addCost(CONFIG.model.questions, cost);
+
+      await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenCalls));
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`  ✗ Error generating questions for ${policyArea}: ${errorMsg}`);
+      progressTracker.addError({
         policyArea,
-        text: q.text,
-        type: q.type || q.format,
-        options: q.options,
-        embedding,
-        weight: 1.0,
-        biasScore: biasIndicators.length > 0 ? 10 - biasIndicators.length : 10,
-      };
-
-      if (validateQuestion(question)) {
-        questions.push(question);
-      } else {
-        console.warn(`    Invalid question ${questionId}, skipping`);
-      }
+        error: `Question generation failed: ${errorMsg}`,
+        timestamp: new Date(),
+      });
+      break;
     }
-
-    progressTracker.updateQuestionGeneration(policyArea, questions.length, questions.length);
-
-    const tokens = response.usage?.total_tokens || 0;
-    const cost = estimateCost(CONFIG.model.questions, tokens);
-    progressTracker.addCost(CONFIG.model.questions, cost);
-
-    logProgress(`  ✓ Generated ${questions.length} questions for ${policyArea}`);
-    await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenCalls));
-
-    return questions;
-
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(`  ✗ Error generating questions for ${policyArea}: ${errorMsg}`);
-    progressTracker.addError({
-      policyArea,
-      error: `Question generation failed: ${errorMsg}`,
-      timestamp: new Date(),
-    });
-    return [];
   }
+
+  if (validQuestions.length < questionCount) {
+    logProgress(`  ⚠️  Only generated ${validQuestions.length}/${questionCount} neutral questions after ${attempt} attempts`);
+  } else {
+    logProgress(`  ✓ Generated ${validQuestions.length} neutral questions for ${policyArea}`);
+  }
+
+  return validQuestions.slice(0, questionCount);
 }
 
 async function generateAllQuestions(progressTracker: ProgressTracker): Promise<Question[]> {
@@ -301,6 +343,25 @@ async function generateAllQuestions(progressTracker: ProgressTracker): Promise<Q
   }
 
   logProgress(`\n✓ Total questions generated: ${allQuestions.length}`);
+
+  // Final neutrality check on all questions
+  if (allQuestions.length > 0) {
+    logProgress('\n🔍 Running final neutrality check on all questions...');
+    const finalCheck = await checkQuestionNeutrality(allQuestions);
+    console.log(formatBiasCheckSummary(finalCheck));
+
+    if (!finalCheck.passed) {
+      throw new Error(
+        `❌ Final neutrality check FAILED\n` +
+        `Score: ${finalCheck.score}/100\n` +
+        `Flagged: ${finalCheck.summary.flaggedQuestions}/${finalCheck.summary.totalQuestions} questions\n` +
+        `This should not happen after per-area checks. Please review the bias checker configuration.`
+      );
+    }
+
+    logProgress(`✓ All questions passed final neutrality check (score: ${finalCheck.score}/100)`);
+  }
+
   return allQuestions;
 }
 
