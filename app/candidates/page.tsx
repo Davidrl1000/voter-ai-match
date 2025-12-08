@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import CandidateCard from '@/components/CandidateCard';
 import candidatesData from '@/data/candidates.json';
@@ -21,6 +21,9 @@ interface Candidate {
 }
 
 export default function CandidatesPage() {
+  // Cache for loaded positions (keyed by party name)
+  const [positionsCache, setPositionsCache] = useState<Record<string, Record<string, string>>>({});
+
   const candidates: Candidate[] = useMemo(() => {
     return candidatesData.map((c) => ({
       name: c.name,
@@ -30,6 +33,13 @@ export default function CandidatesPage() {
       planStats: c.planStats,
     })).sort((a, b) => a.party.localeCompare(b.party));
   }, []);
+
+  const handlePositionsLoaded = (partyName: string, positions: Record<string, string>) => {
+    setPositionsCache((prev) => ({
+      ...prev,
+      [partyName]: positions,
+    }));
+  };
 
   return (
     <>
@@ -56,6 +66,8 @@ export default function CandidatesPage() {
                 plan={candidate.plan}
                 site={candidate.site}
                 planStats={candidate.planStats}
+                cachedPositions={positionsCache[candidate.party]}
+                onPositionsLoaded={(positions) => handlePositionsLoaded(candidate.party, positions)}
               />
             ))}
           </div>

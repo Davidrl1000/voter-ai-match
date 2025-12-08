@@ -18,6 +18,8 @@ interface CandidateCardProps {
   plan: string;
   site: string;
   planStats?: PdfStats;
+  cachedPositions?: Record<string, string>;
+  onPositionsLoaded?: (positions: Record<string, string>) => void;
 }
 
 /**
@@ -31,7 +33,15 @@ function formatReadingTime(minutes: number): string {
   return `~${hours} hrs`;
 }
 
-export default function CandidateCard({ name, party, plan, site, planStats }: CandidateCardProps) {
+export default function CandidateCard({
+  name,
+  party,
+  plan,
+  site,
+  planStats,
+  cachedPositions,
+  onPositionsLoaded
+}: CandidateCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPositionsModal, setShowPositionsModal] = useState(false);
 
@@ -181,6 +191,8 @@ export default function CandidateCard({ name, party, plan, site, planStats }: Ca
         isOpen={showPositionsModal}
         onClose={() => setShowPositionsModal(false)}
         partyName={party}
+        cachedPositions={cachedPositions}
+        onPositionsLoaded={onPositionsLoaded}
       />
     </>
   );
