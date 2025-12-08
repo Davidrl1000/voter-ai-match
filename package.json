@@ -15,7 +15,8 @@
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:transparency": "vitest run tests/transparency",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "audit:coverage": "tsx scripts/audit-coverage.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.940.0",

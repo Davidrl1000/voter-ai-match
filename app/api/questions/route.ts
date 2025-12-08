@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getQuestions } from '@/lib/db/dynamodb';
+import { getQuestions, getQuestionsByIds } from '@/lib/db/dynamodb';
 import { logProgress, validateQuestion } from '@/lib/training/utils';
 import { API_LIMITS } from '@/lib/constants';
 import { selectRandomQuestions } from '@/lib/utils/question-selection';
 
-const { MIN, MAX, DEFAULT } = API_LIMITS.QUESTIONS;
+const { ALLOWED_COUNTS, DEFAULT } = API_LIMITS.QUESTIONS;
+
+/**
+ * IDs of comprehensive-favoring questions that guarantee 100% candidate coverage
+ * These questions MUST always be included in the question pool to ensure fairness
+ */
+const COMPREHENSIVE_QUESTION_IDS = [
+  'comp-consistency-1',
+  'comp-comprehensive-1',
+  'comp-stability-1',
+  'comp-holistic-1',
+];
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,16 +33,45 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      limit = Math.max(MIN, Math.min(parsedLimit, MAX));
+
+      // Validate that limit is one of the allowed counts
+      if (!ALLOWED_COUNTS.includes(parsedLimit as typeof ALLOWED_COUNTS[number])) {
+        logProgress('Error: Invalid question count', {
+          requested: parsedLimit,
+          allowed: ALLOWED_COUNTS
+        });
+        return NextResponse.json(
+          {
+            error: `Invalid question count. Must be one of: ${ALLOWED_COUNTS.join(', ')}`,
+            allowedCounts: ALLOWED_COUNTS
+          },
+          { status: 400 }
+        );
+      }
+
+      limit = parsedLimit;
     }
 
     logProgress('Fetching questions from database', { limit });
 
-    // Fetch with buffer for validation failures + randomized scan offset
+    // CRITICAL: Always fetch comprehensive questions to guarantee 100% candidate coverage
+    const comprehensiveQuestionsPromise = getQuestionsByIds(COMPREHENSIVE_QUESTION_IDS);
+
+    // Fetch random pool with buffer for validation failures + randomized scan offset
     // The randomize flag in getQuestions() ensures we start at different positions each time
-    // This gives variety across sessions without fetching a huge pool
     const poolSize = Math.ceil(limit * 1.3);
-    const allQuestions = await getQuestions(poolSize);
+    const randomQuestionsPromise = getQuestions(poolSize);
+
+    // Fetch both in parallel for performance
+    const [comprehensiveQuestions, randomQuestions] = await Promise.all([
+      comprehensiveQuestionsPromise,
+      randomQuestionsPromise,
+    ]);
+
+    // Combine comprehensive questions with random pool (remove duplicates)
+    const seenIds = new Set(comprehensiveQuestions.map(q => q.questionId));
+    const uniqueRandomQuestions = randomQuestions.filter(q => !seenIds.has(q.questionId));
+    const allQuestions = [...comprehensiveQuestions, ...uniqueRandomQuestions];
 
     if (allQuestions.length === 0) {
       logProgress('Warning: No questions found in database');
@@ -59,6 +99,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Select random diverse questions
+    // The selectRandomQuestions function will ALWAYS include 1-2 comprehensive questions
     const selectedQuestions = selectRandomQuestions(validQuestions, limit);
 
     logProgress('Questions selected successfully', {

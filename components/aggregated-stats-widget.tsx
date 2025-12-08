@@ -93,9 +93,13 @@ export function AggregatedStatsWidget() {
                   className="hover:bg-white/20 rounded-full p-1 transition-colors cursor-pointer"
                   aria-label="Cerrar"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <Image
+                    src="/assets/icons/close.svg"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="brightness-0 invert"
+                  />
                 </button>
               </div>
               <p className="text-blue-100 text-sm mt-1">

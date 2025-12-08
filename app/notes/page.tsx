@@ -23,10 +23,10 @@ export default function NotesPage() {
           <div className="prose prose-gray max-w-none">
             <InfoBlock title="Sobre esta herramienta">
               <p className="leading-relaxed mb-4">
-                Votante AI es una herramienta diseñada para ayudarte a entender qué candidato presidencial se alinea mejor con tus valores y prioridades políticas para las elecciones de Costa Rica 2026.
+                Votante AI es una herramienta informativa diseñada para ayudarte a explorar qué candidato presidencial podría alinearse con tus valores y prioridades políticas para las elecciones de Costa Rica 2026.
               </p>
               <p className="leading-relaxed">
-                A través de un cuestionario basado en inteligencia artificial, comparamos tus respuestas con las posiciones documentadas de cada candidato en áreas clave como economía, salud, educación, seguridad, medio ambiente, políticas sociales e infraestructura.
+                El cuestionario utiliza modelos de inteligencia artificial para analizar textos públicos, pero los resultados son aproximaciones basadas en información disponible y no representan una recomendación, predicción ni evaluación oficial.
               </p>
             </InfoBlock>
 
@@ -35,19 +35,19 @@ export default function NotesPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">1. Responde el cuestionario</h3>
                   <p className="leading-relaxed">
-                    Selecciona cuántas preguntas deseas responder (recomendamos al menos 20) y completa el cuestionario sobre diferentes áreas de política.
+                    Selecciona cuántas preguntas deseas responder y completa el cuestionario sobre diferentes áreas de política.
                   </p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">2. Algoritmo de coincidencia</h3>
                   <p className="leading-relaxed">
-                    Nuestro sistema utiliza similitud semántica para comparar tus respuestas con las posiciones de cada candidato, considerando no solo las respuestas directas sino también el contexto y significado.
+                    El sistema compara tus respuestas con los planes y posiciones públicas documentadas de cada candidato mediante análisis semántico. La comparación es automática y puede contener márgenes de error.
                   </p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">3. Resultados personalizados</h3>
                   <p className="leading-relaxed">
-                    Recibirás un porcentaje de compatibilidad con cada candidato y una explicación generada por IA que te ayuda a entender por qué obtuviste esos resultados.
+                    Obtendrás porcentajes de compatibilidad y una explicación generada por IA. Estos resultados son orientativos y no deben interpretarse como verificación factual o asesoría electoral.
                   </p>
                 </div>
               </div>
@@ -57,31 +57,67 @@ export default function NotesPage() {
               <ul className="space-y-3">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
-                  <span className="leading-relaxed">Esta herramienta es solo una <strong>guía informativa</strong>. No sustituye tu propia investigación sobre los candidatos.</span>
+                  <span className="leading-relaxed">
+                    Esta herramienta es únicamente una <strong>guía informativa</strong> y no sustituye la investigación personal ni representa una recomendación de voto.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
-                  <span className="leading-relaxed">Los resultados se basan en las posiciones documentadas de los candidatos en sus planes de gobierno oficiales.</span>
+                  <span className="leading-relaxed">
+                    La información utilizada proviene de <strong>fuentes públicas y oficiales</strong> disponibles al momento del análisis. La herramienta no valida ni garantiza la exactitud, vigencia o exhaustividad de dichos documentos.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
-                  <span className="leading-relaxed">El sistema es completamente <strong>neutral políticamente</strong> y no favorece a ningún candidato.</span>
+                  <span className="leading-relaxed">
+                    El sistema busca ser neutral y no pretende favorecer a ningún candidato. Cualquier coincidencia depende únicamente de las respuestas ingresadas por el usuario y de la información pública analizada.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
-                  <span className="leading-relaxed">Tus respuestas son <strong>privadas y no se almacenan</strong>. Todo el procesamiento ocurre en tu dispositivo.</span>
+                  <span className="leading-relaxed">
+                    Tus respuestas son <strong>privadas y no se almacenan</strong>. El procesamiento ocurre en tu dispositivo y la información no se asocia con tu identidad.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span className="leading-relaxed">
+                    Esta herramienta se ofrece “tal cual” y sin garantías de ningún tipo. Su uso es voluntario y bajo la responsabilidad del usuario.
+                  </span>
                 </li>
               </ul>
             </InfoBlock>
 
             <InfoBlock title="Transparencia">
               <p className="leading-relaxed mb-4">
-                Este proyecto utiliza inteligencia artificial de OpenAI para generar preguntas y explicaciones, pero el algoritmo de coincidencia es completamente determinista y transparente.
+                Este proyecto utiliza tecnologías de inteligencia artificial de OpenAI para generar preguntas y explicaciones, pero el proceso de coincidencia entre respuestas y candidatos es completamente determinista, verificable y documentado.
               </p>
-              <p className="leading-relaxed">
-                El código fuente está disponible públicamente para garantizar la neutralidad y permitir que cualquiera verifique cómo funciona el sistema.
+
+              <p className="leading-relaxed mb-4">
+                El código fuente es 100% público en <a
+                  href="https://github.com/Davidrl1000/voter-ai-match"
+                  className="underline"
+                  target="_blank"
+                >
+                  este repositorio
+                </a>, lo que garantiza neutralidad, auditabilidad y la posibilidad de que cualquier persona examine cómo funciona el sistema.
+              </p>
+
+              <p className="leading-relaxed mb-4">
+                El propósito de esta herramienta es aportar claridad en un entorno saturado de información, combatir la desinformación y promover un proceso electoral más transparente y accesible para todos.
+              </p>
+
+              <p className="leading-relaxed text-gray-400 text-sm">
+                Conceptualizado y desarrollado por <a
+                  href="https://www.linkedin.com/in/davidrl1000"
+                  className="underline"
+                  target="_blank"
+                >
+                  David Rojas
+                </a>.
               </p>
             </InfoBlock>
+
           </div>
         </div>
       </div>

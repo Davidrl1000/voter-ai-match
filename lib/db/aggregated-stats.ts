@@ -100,11 +100,10 @@ export function formatStatsResponse(stats: AggregatedStats): StatsResponse {
     ? Math.round((stats.totalQuestions / stats.totalMatches) * 10) / 10
     : 0;
 
-  // Convert to sorted array and return only top 3 with minimal info
+  // Convert to sorted array and return all candidates
   const topResults = Object.entries(stats.candidateStats)
     .map(([, count]) => count)
     .sort((a, b) => b - a)
-    .slice(0, 3)
     .map((count, index) => ({
       rank: index + 1,
       percentage: Math.round((count / stats.totalMatches) * 1000) / 10,

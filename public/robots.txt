@@ -1,0 +1,11 @@
+# Votante AI - Costa Rica 2026
+# Allow all crawlers to access the site
+
+User-agent: *
+Allow: /
+
+# Disallow API routes from being crawled
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://votante-ai.com/sitemap.xml

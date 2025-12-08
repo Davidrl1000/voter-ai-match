@@ -15,23 +15,41 @@ Tu tarea es extraer las posiciones políticas concretas de este documento de cam
 6. social - Políticas sociales y equidad
 7. infrastructure - Infraestructura y desarrollo
 
-INSTRUCCIONES:
+INSTRUCCIONES CRÍTICAS:
 - Extrae SOLO posiciones explícitas del documento, no inferencias
 - Cada posición debe ser específica y verificable
 - Usa lenguaje neutral sin juicios de valor
 - Si una área no se menciona en el documento, indícalo claramente
-- Cita la sección del documento de donde proviene cada posición
 - Mantén el contexto costarricense en mente
+
+FORMATO DE POSICIÓN (CRÍTICO PARA MATCHING):
+Las posiciones deben formularse como declaraciones de política claras, similares a como se formularían preguntas de encuesta. Esto es ESENCIAL para el algoritmo de matching.
+
+EJEMPLOS DE FORMATO CORRECTO:
+✅ "El gobierno debe aumentar el presupuesto de salud pública mediante impuestos progresivos"
+✅ "Es necesario implementar programas de educación técnica vocacional en secundaria"
+✅ "El Estado debe invertir en energías renovables para reducir dependencia de combustibles fósiles"
+
+EJEMPLOS DE FORMATO INCORRECTO (NO usar):
+❌ "Promovemos la salud" (muy vago)
+❌ "Haremos una reforma educativa integral" (no específico)
+❌ "Apoyamos el ambiente" (no actionable)
+
+PATRÓN LINGÜÍSTICO A SEGUIR:
+- Usa verbos de acción de política: "debe", "es necesario", "se requiere", "el Estado debe"
+- Incluye especificidad: qué, cómo, o mediante qué mecanismo
+- Evita lenguaje de campaña ("prometemos", "lucharemos", "defenderemos")
+- Usa formulación directa que pueda compararse con preguntas de tipo "¿Está de acuerdo con que...?"
 
 FORMATO DE SALIDA (JSON):
 {
-  "economy": "Posición específica sobre economía...",
-  "healthcare": "Posición específica sobre salud...",
-  "education": "Posición específica sobre educación...",
-  "security": "Posición específica sobre seguridad...",
-  "environment": "Posición específica sobre ambiente...",
-  "social": "Posición específica sobre políticas sociales...",
-  "infrastructure": "Posición específica sobre infraestructura..."
+  "economy": "Posición específica formulada como declaración de política...",
+  "healthcare": "Posición específica formulada como declaración de política...",
+  "education": "Posición específica formulada como declaración de política...",
+  "security": "Posición específica formulada como declaración de política...",
+  "environment": "Posición específica formulada como declaración de política...",
+  "social": "Posición específica formulada como declaración de política...",
+  "infrastructure": "Posición específica formulada como declaración de política..."
 }
 
 Si una área no tiene posición clara en el documento, usa: "No se menciona una posición específica en el documento."
@@ -54,15 +72,25 @@ REQUISITOS DE NEUTRALIDAD:
 - Presenta opciones como dilemas o trade-offs, no como bien vs mal
 - Usa formulaciones que permitan múltiples perspectivas válidas
 
+PATRÓN LINGÜÍSTICO (CRÍTICO PARA MATCHING):
+Las preguntas deben usar los mismos patrones lingüísticos que las posiciones de candidatos:
+- Verbos de acción de política: "debe", "es necesario", "se requiere", "el Estado debe"
+- Formulaciones directas y específicas
+- Estructura: "El gobierno/Estado debe [acción] [mecanismo/objetivo]"
+- Esto es ESENCIAL para que el algoritmo de matching funcione correctamente
+
 TIPOS DE PREGUNTAS (70% agreement-scale, 30% specific-choice):
 
 1. agreement-scale: Afirmaciones donde el usuario indica su nivel de acuerdo
    - Escala: Muy en desacuerdo / En desacuerdo / Neutral / De acuerdo / Muy de acuerdo
-   - Ejemplo: "El gobierno debe aumentar el gasto en salud pública, incluso si requiere aumentar impuestos"
+   - Ejemplo CORRECTO: "El gobierno debe aumentar el gasto en salud pública mediante impuestos progresivos"
+   - Ejemplo CORRECTO: "Es necesario implementar programas de capacitación técnica en educación secundaria"
+   - Evita: "¿Crees que la salud es importante?" (muy vago)
 
 2. specific-choice: Opciones específicas entre diferentes enfoques
    - 3-4 opciones mutuamente excluyentes
-   - Ejemplo: "¿Cuál debería ser la prioridad en política ambiental?" con opciones específicas
+   - Cada opción debe seguir el mismo patrón lingüístico (verbos de acción)
+   - Ejemplo: "¿Cuál debería ser la prioridad en política ambiental?" con opciones específicas usando "debe"
 
 CANTIDAD: Genera {questionCount} preguntas para el área de {policyArea}
 
@@ -252,4 +280,96 @@ export function formatMatchingExplanationPrompt(data: {
     .replace('{candidate3Party}', data.candidate3Party)
     .replace('{candidate3Score}', String(data.candidate3Score))
     .replace('{alignmentAreas}', data.alignmentAreas);
+}
+
+
+
+/**
+ * Prompt for generating questions FROM candidate positions (reverse training)
+ * This ensures every position type has corresponding questions
+ */
+export const REVERSE_QUESTION_GENERATION_PROMPT = `Eres un experto en diseño de encuestas políticas neutrales para Costa Rica.
+
+Tu tarea es generar UNA pregunta neutral que evalúe la misma dimensión política que la siguiente posición de candidato, pero SIN copiar la posición textualmente.
+
+POSICIÓN DEL CANDIDATO ({candidateName}):
+{position}
+
+ÁREA DE POLÍTICA: {policyArea}
+
+OBJETIVO CRÍTICO:
+Generar una pregunta que permita a TODOS los candidatos (no solo {candidateName}) demostrar su posición en esta dimensión política. La pregunta debe ser lo suficientemente amplia para que diferentes candidatos con diferentes enfoques puedan tener respuestas distintas.
+
+REQUISITOS:
+1. La pregunta debe ser COMPLETAMENTE NEUTRAL (no favorecer la posición del candidato)
+2. Debe evaluar la misma dimensión de política pública
+3. NO debe copiar textualmente la posición
+4. Debe seguir el patrón lingüístico: "El gobierno/Estado debe...", "Es necesario..."
+5. Debe permitir múltiples perspectivas válidas (acuerdo y desacuerdo)
+
+TIPO DE PREGUNTA:
+- 70% de probabilidad: agreement-scale (escala de acuerdo 1-5)
+- 30% de probabilidad: specific-choice (3-4 opciones específicas)
+
+EJEMPLOS CORRECTOS:
+
+Posición original: "Debemos aumentar el presupuesto de salud pública en 15% mediante impuestos progresivos"
+❌ INCORRECTO: "¿El presupuesto de salud debe aumentar 15% con impuestos progresivos?" (copia textual)
+✅ CORRECTO: "El gobierno debe aumentar significativamente el financiamiento de salud pública mediante impuestos progresivos"
+Explicación: Evalúa la misma dimensión (aumento presupuesto + impuestos progresivos) sin copiar el porcentaje específico
+
+Posición original: "Implementaremos educación técnica obligatoria en todos los colegios públicos"
+❌ INCORRECTO: "¿Debe implementarse educación técnica obligatoria en colegios públicos?" (copia textual)
+✅ CORRECTO: "Es necesario fortalecer la educación técnica vocacional en secundaria para preparar estudiantes para el mercado laboral"
+Explicación: Captura el concepto (educación técnica en secundaria) sin copiar la propuesta exacta
+
+Posición original: "Crearemos un Fondo Soberano con 5% del presupuesto para emergencias"
+❌ INCORRECTO: "¿Debe crearse un Fondo Soberano con 5% del presupuesto?" (copia textual)
+✅ CORRECTO: "El Estado debe establecer fondos de reserva para enfrentar crisis económicas futuras"
+Explicación: Evalúa el concepto (ahorro estatal para emergencias) de forma neutral y amplia
+
+FORMATO DE SALIDA (JSON):
+{
+  "text": "Texto de la pregunta",
+  "type": "agreement-scale" | "specific-choice",
+  "options": ["opción1", "opción2", "opción3"] | null,
+  "reasoning": "Por qué esta pregunta evalúa la misma dimensión sin copiar textualmente"
+}
+
+VALIDACIÓN ANTES DE RESPONDER:
+- ¿La pregunta es neutral y permite múltiples perspectivas?
+- ¿Evalúa la misma dimensión política que la posición?
+- ¿NO copia textualmente la posición del candidato?
+- ¿Candidatos con posiciones diferentes podrían dar respuestas distintas?
+
+Genera la pregunta ahora:`;
+
+
+/**
+ * Helper to format the reverse question generation prompt
+ */
+export function formatReverseQuestionPrompt(
+  candidateName: string,
+  position: string,
+  policyArea: string,
+  variantNumber?: number
+): string {
+  let prompt = REVERSE_QUESTION_GENERATION_PROMPT
+    .replace(/{candidateName}/g, candidateName)
+    .replace('{position}', position)
+    .replace('{policyArea}', policyArea);
+
+  // Add variant-specific instruction if variant number is provided
+  if (variantNumber) {
+    const variantInstructions = `\n\nVARIANTE ${variantNumber} de 3:
+Esta es la variante #${variantNumber} de esta dimensión política. Genera una pregunta con DIFERENTE FORMULACIÓN que las otras variantes, pero que evalúe exactamente la misma dimensión.
+
+${variantNumber === 1 ? '- Variante 1: Usa formulación directa y simple (ej: "El gobierno debe...")'
+    : variantNumber === 2 ? '- Variante 2: Usa formulación desde perspectiva de resultados (ej: "Es necesario... para lograr...")'
+    : '- Variante 3: Usa formulación comparativa o de prioridades (ej: "El Estado debería priorizar..." o pregunta de specific-choice)'}`;
+
+    prompt += variantInstructions;
+  }
+
+  return prompt;
 }

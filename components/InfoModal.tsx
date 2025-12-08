@@ -52,7 +52,7 @@ export default function InfoModal({ isOpen, onClose, title, children }: InfoModa
                 src="/assets/icons/close.svg"
                 alt="Cerrar"
                 height={20}
-                className="w-full h-full"
+                className="w-full h-full brightness-0 invert cursor-pointer"
               />
             </div>
           </button>

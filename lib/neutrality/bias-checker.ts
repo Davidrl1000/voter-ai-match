@@ -7,13 +7,13 @@ import partisanKeywords from '@/data/partisan-keywords.json';
  */
 export interface BiasCheckResult {
   passed: boolean;
-  score: number; // 0-100, where 100 is completely neutral
+  score: number;
   issues: BiasIssue[];
   summary: {
     totalQuestions: number;
     flaggedQuestions: number;
     policyDistribution: Record<string, number>;
-    distributionBalance: number; // 0-100, where 100 is perfectly balanced
+    distributionBalance: number;
   };
 }
 
@@ -107,13 +107,24 @@ export async function checkQuestionNeutrality(
 /**
  * Check if keyword matches with word boundaries (not substring)
  * Example: "PLN" matches "el PLN propone" but not "comPLNeto"
+ *
+ * IMPORTANT: 2-letter abbreviations (PA, FA, UP) require UPPERCASE to avoid false positives
+ * with common Spanish words like "para", "familia", "supremo"
  */
 function matchesKeyword(text: string, keyword: string): boolean {
   const lowerText = text.toLowerCase();
   const lowerKeyword = keyword.toLowerCase();
 
-  // For abbreviations (all caps, 2-6 letters), use strict word boundary
-  if (/^[A-Z]{2,6}$/.test(keyword)) {
+  // For 2-letter abbreviations: MUST be uppercase in text to match
+  // This prevents "PA" from matching "para", "participar", etc.
+  if (/^[A-Z]{2}$/.test(keyword)) {
+    // Case-sensitive match - must be uppercase in original text
+    const regex = new RegExp(`\\b${keyword}\\b`);
+    return regex.test(text); // Use original text, not lowercased
+  }
+
+  // For 3-6 letter abbreviations (all caps), use strict word boundary (case-insensitive)
+  if (/^[A-Z]{3,6}$/.test(keyword)) {
     const regex = new RegExp(`\\b${lowerKeyword}\\b`, 'i');
     return regex.test(text);
   }
