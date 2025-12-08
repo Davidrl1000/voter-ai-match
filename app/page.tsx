@@ -173,7 +173,7 @@ export default function Home() {
               <div className="w-3 h-3">
                 <Image
                   src="/assets/icons/info-circle.svg"
-                  alt=""
+                  alt="Información"
                   width={12}
                   height={12}
                   className="w-full h-full"
