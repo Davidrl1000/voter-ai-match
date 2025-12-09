@@ -18,6 +18,12 @@ interface CandidateMatch {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set in environment variables');
+      return new Response('OpenAI API key not configured', { status: 500 });
+    }
+
     const body = await request.json();
     const { matches, questionCount } = body as {
       matches: CandidateMatch[];
@@ -103,7 +109,16 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error generating explanation:', error);
-    return new Response('Failed to generate explanation', { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error generating explanation:', errorMessage);
+    console.error('Full error:', error);
+
+    // Check if it's an API key issue
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set');
+      return new Response('OpenAI API key not configured', { status: 500 });
+    }
+
+    return new Response(`Failed to generate explanation: ${errorMessage}`, { status: 500 });
   }
 }
