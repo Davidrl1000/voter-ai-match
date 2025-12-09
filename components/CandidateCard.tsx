@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 import CandidatePositionsModal from './CandidatePositionsModal';
 
 interface PdfStats {
@@ -102,6 +103,13 @@ export default function CandidateCard({
                   href={`/assets/docs/${plan}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+                      candidateName: name,
+                      party,
+                      action: 'plan_gobierno',
+                    });
+                  }}
                   className="px-3 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-center"
                 >
                   Plan de Gobierno
@@ -110,18 +118,39 @@ export default function CandidateCard({
                   href={site}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+                      candidateName: name,
+                      party,
+                      action: 'candidaturas',
+                    });
+                  }}
                   className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors text-center"
                 >
                   Candidaturas
                 </a>
                 <button
-                  onClick={() => setShowPositionsModal(true)}
+                  onClick={() => {
+                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+                      candidateName: name,
+                      party,
+                      action: 'ver_posiciones',
+                    });
+                    setShowPositionsModal(true);
+                  }}
                   className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Ver Posiciones
                 </button>
                 <button
-                  onClick={() => setIsFlipped(true)}
+                  onClick={() => {
+                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+                      candidateName: name,
+                      party,
+                      action: 'ver_estadisticas',
+                    });
+                    setIsFlipped(true);
+                  }}
                   className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Ver Estadísticas

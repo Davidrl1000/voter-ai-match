@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import Header from '@/components/Header';
 import CandidateCard from '@/components/CandidateCard';
 import candidatesData from '@/data/candidates.json';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 
 interface PdfStats {
   pageCount: number;
@@ -40,6 +41,13 @@ export default function CandidatesPage() {
       [partyName]: positions,
     }));
   }, []);
+
+  // Track page view on mount
+  useEffect(() => {
+    trackGTMEvent(GTMEvents.CANDIDATES_PAGE_VIEWED, {
+      totalCandidates: candidates.length,
+    });
+  }, [candidates.length]);
 
   return (
     <>

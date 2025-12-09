@@ -1,4 +1,7 @@
+'use client';
+
 import Image from 'next/image';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 
 export default function GitHubLink() {
   return (
@@ -6,6 +9,9 @@ export default function GitHubLink() {
       href="https://github.com/Davidrl1000/voter-ai-match"
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => {
+        trackGTMEvent(GTMEvents.HOME_GITHUB_CLICK);
+      }}
       className="fixed bottom-4 right-4 z-[200] w-[40px] h-[40px] opacity-80 hover:scale-110 transition-transform duration-200"
       aria-label="View source on GitHub"
     >

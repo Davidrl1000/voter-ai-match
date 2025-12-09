@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import InfoModal from './InfoModal';
 import { POLICY_AREAS, POLICY_AREA_LABELS } from '@/lib/constants';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 
 interface CandidatePositionsModalProps {
   isOpen: boolean;
@@ -56,7 +57,14 @@ export default function CandidatePositionsModal({
     if (isOpen && !positions && !isLoading) {
       fetchPositions();
     }
-  }, [isOpen, positions, isLoading, fetchPositions]);
+
+    // Track modal opened
+    if (isOpen) {
+      trackGTMEvent(GTMEvents.QUIZ_POSITIONS_OPENED, {
+        party: partyName,
+      });
+    }
+  }, [isOpen, positions, isLoading, fetchPositions, partyName]);
 
   const toggleArea = (area: string) => {
     const newExpanded = new Set(expandedAreas);
@@ -64,14 +72,27 @@ export default function CandidatePositionsModal({
       newExpanded.delete(area);
     } else {
       newExpanded.add(area);
+      // Track position viewed when expanded
+      trackGTMEvent(GTMEvents.QUIZ_POSITION_VIEWED, {
+        party: partyName,
+        policyArea: area,
+        policyAreaLabel: POLICY_AREA_LABELS[area],
+      });
     }
     setExpandedAreas(newExpanded);
+  };
+
+  const handleClose = () => {
+    trackGTMEvent(GTMEvents.QUIZ_POSITIONS_CLOSED, {
+      party: partyName,
+    });
+    onClose();
   };
 
   return (
     <InfoModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Posiciones del Candidato"
     >
       <div className="space-y-3">

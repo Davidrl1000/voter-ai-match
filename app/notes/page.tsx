@@ -1,7 +1,16 @@
+'use client';
+
+import { useEffect } from 'react';
 import Header from '@/components/Header';
 import InfoBlock from '@/components/InfoBlock';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 
 export default function NotesPage() {
+  // Track page view on mount
+  useEffect(() => {
+    trackGTMEvent(GTMEvents.NOTES_PAGE_VIEWED);
+  }, []);
+
   return (
     <>
       <Header />
@@ -76,7 +85,13 @@ export default function NotesPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
                   <span className="leading-relaxed">
-                    Tus respuestas del cuestionario son <strong>privadas y no se almacenan</strong>. Solo se registran datos agregados y anónimos con fines analíticos (como el candidato con mayor coincidencia) sin asociar la información con tu identidad. Utilizamos herramientas de análisis web estándar para mejorar la experiencia del usuario.
+                    Tus respuestas del cuestionario son <strong>privadas y no se almacenan</strong>. Solo se registran datos agregados y anónimos con fines analíticos (como el candidato con mayor coincidencia) sin asociar la información con tu identidad.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span className="leading-relaxed">
+                    Utilizamos <strong>herramientas de análisis web</strong> que recopilan datos técnicos anónimos como: páginas visitadas, tiempo de uso, interacciones generales (clics en botones, navegación), tipo de dispositivo y navegador. Estos datos nos ayudan a mejorar la experiencia del usuario y entender cómo se utiliza la herramienta, pero nunca se vinculan con tu identidad personal ni con tus respuestas específicas del cuestionario.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">

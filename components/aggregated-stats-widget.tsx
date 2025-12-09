@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 
 interface TopResult {
   rank: number;
@@ -49,8 +50,14 @@ export function AggregatedStatsWidget() {
       {/* Floating Bubble Button */}
       <button
         onClick={() => {
-          setIsOpen(!isOpen);
-          if (!isOpen) fetchStats(); // Refresh stats when opening
+          const newState = !isOpen;
+          setIsOpen(newState);
+          if (newState) {
+            fetchStats(); // Refresh stats when opening
+            trackGTMEvent(GTMEvents.STATS_WIDGET_CLICKED, {
+              action: 'opened',
+            });
+          }
         }}
         className="fixed bottom-[72px] right-4 z-40 w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer"
         aria-label="Ver estadísticas agregadas"

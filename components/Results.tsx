@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
 import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 import LoadingSpinner from './LoadingSpinner';
 
 interface CandidateMatch {
@@ -93,6 +94,13 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       };
 
       streamNextChunk();
+
+      // Track AI explanation shown (track when streaming starts)
+      trackGTMEvent(GTMEvents.RESULTS_AI_EXPLANATION_SHOWN, {
+        questionCount: answers.length,
+        topMatchName: matchesData[0]?.name,
+        topMatchScore: matchesData[0]?.score,
+      });
     } catch (err) {
       console.error('Error streaming explanation:', err);
       setIsStreaming(false);
@@ -272,6 +280,14 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         setLoading(false);
 
         if (data.matches.length > 0) {
+          // Track results viewed
+          trackGTMEvent(GTMEvents.RESULTS_VIEWED, {
+            topMatchName: data.matches[0]?.name,
+            topMatchScore: data.matches[0]?.score,
+            questionCount: answers.length,
+            totalCandidates: data.matches.length,
+          });
+
           streamExplanation(data.matches);
         }
       } catch (err) {
@@ -409,13 +425,21 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         <div className="mt-8 text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={onRestart}
+              onClick={() => {
+                trackGTMEvent(GTMEvents.RESULTS_RESTART_CLICKED, {
+                  questionCount: answers.length,
+                });
+                onRestart();
+              }}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
             >
               Volver a empezar
             </button>
             <Link
               href="/candidates"
+              onClick={() => {
+                trackGTMEvent(GTMEvents.RESULTS_VIEW_ALL_CANDIDATES);
+              }}
               className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto inline-flex items-center justify-center"
             >
               Ver todos los candidatos

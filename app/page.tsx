@@ -11,6 +11,7 @@ import type { Question } from '@/lib/db/dynamodb';
 import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '@/lib/constants';
 import { Stage } from '@/lib/types/stage';
 import type { Stage as StageType } from '@/lib/types/stage';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 
 export default function Home() {
   const [stage, setStage] = useState<StageType>(Stage.WELCOME);
@@ -24,6 +25,11 @@ export default function Home() {
   const handleStart = async () => {
     setIsLoadingQuestions(true);
 
+    // Track quiz start
+    trackGTMEvent(GTMEvents.HOME_START_QUIZ, {
+      question_count: questionLimit,
+    });
+
     try {
       const response = await fetch(`/api/questions?limit=${questionLimit}`);
       const data = await response.json();
@@ -31,6 +37,11 @@ export default function Home() {
       setPreloadedQuestions(data.questions);
       setIsLoadingQuestions(false);
       setStage(Stage.QUIZ);
+
+      // Track quiz started
+      trackGTMEvent(GTMEvents.QUIZ_STARTED, {
+        question_count: questionLimit,
+      });
     } catch (error) {
       console.error('Error loading questions:', error);
       setIsLoadingQuestions(false);
@@ -123,7 +134,13 @@ export default function Home() {
               {QUESTION_OPTIONS.map((option) => (
                 <button
                   key={option.count}
-                  onClick={() => setQuestionLimit(option.count)}
+                  onClick={() => {
+                    setQuestionLimit(option.count);
+                    trackGTMEvent(GTMEvents.HOME_QUESTION_COUNT_SELECTED, {
+                      count: option.count,
+                      label: option.label,
+                    });
+                  }}
                   className={`
                     p-4 rounded-lg border-2 transition-all duration-200
                     ${questionLimit === option.count
@@ -170,7 +187,10 @@ export default function Home() {
           </div>
 
           <button
-            onClick={() => setShowAreasModal(true)}
+            onClick={() => {
+              setShowAreasModal(true);
+              trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
+            }}
             className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95"
           >
             <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1 tabular-nums">
@@ -202,7 +222,10 @@ export default function Home() {
 
         {/* Privacy Note */}
         <button
-          onClick={() => setShowPrivacyModal(true)}
+          onClick={() => {
+            setShowPrivacyModal(true);
+            trackGTMEvent(GTMEvents.SECURITY_MESSAGE_SHOWN);
+          }}
           className="flex items-center justify-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer mx-auto"
         >
           <div className="w-3.5 h-3.5">
@@ -220,7 +243,10 @@ export default function Home() {
         {/* Policy Areas Modal */}
         <InfoModal
           isOpen={showAreasModal}
-          onClose={() => setShowAreasModal(false)}
+          onClose={() => {
+            setShowAreasModal(false);
+            trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_CLOSED);
+          }}
           title="Áreas de Política"
         >
           <div className="space-y-3">
@@ -256,7 +282,10 @@ export default function Home() {
         {/* Privacy Modal */}
         <InfoModal
           isOpen={showPrivacyModal}
-          onClose={() => setShowPrivacyModal(false)}
+          onClose={() => {
+            setShowPrivacyModal(false);
+            trackGTMEvent(GTMEvents.SECURITY_MESSAGE_CLOSED);
+          }}
           title="Privado y Seguro"
         >
           <div className="space-y-4">
@@ -307,9 +336,12 @@ export default function Home() {
                 />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Sin rastreo</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Datos técnicos anónimos</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  Recopilamos datos técnicos anónimos (páginas visitadas, clics, tiempo de uso, tipo de dispositivo) mediante herramientas de análisis web estándar para mejorar la experiencia del usuario.
+                </p>
                 <p className="text-sm text-gray-600">
-                  No usamos cookies de rastreo ni analíticas invasivas. Tu navegación es privada.
+                  Estos datos nunca se vinculan con tu identidad ni con tus respuestas del cuestionario. Tus respuestas permanecen completamente privadas y anónimas.
                 </p>
               </div>
             </div>
