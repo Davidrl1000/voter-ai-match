@@ -515,7 +515,7 @@ describe('Triple Pathway Architecture', () => {
         { pattern: 'mixed', answers: [1, 5] },
       ];
 
-      answerPatterns.forEach(({ pattern, answers }) => {
+      answerPatterns.forEach(({ answers }) => {
         const userAnswers: UserAnswer[] = answers.map((answer, idx) => ({
           questionId: `q${idx + 1}`,
           policyArea: idx === 0 ? 'economy' : 'healthcare',

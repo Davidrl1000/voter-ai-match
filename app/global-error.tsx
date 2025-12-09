@@ -20,6 +20,48 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Error del Servidor - Votante AI</title>
+        <style>{`
+          .btn-primary-error {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(to right, #2563eb, #4f46e5);
+            color: white;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+          }
+          .btn-primary-error:hover {
+            background: linear-gradient(to right, #1d4ed8, #4338ca);
+            transform: scale(1.02);
+          }
+          .btn-primary-error:active {
+            transform: scale(0.98);
+          }
+          .btn-secondary-error {
+            padding: 0.75rem 2rem;
+            background: white;
+            border: 2px solid #d1d5db;
+            color: #374151;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+          }
+          .btn-secondary-error:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            transform: scale(1.02);
+          }
+          .btn-secondary-error:active {
+            transform: scale(0.98);
+          }
+        `}</style>
       </head>
       <body>
         <div style={{
@@ -58,6 +100,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                   stroke="currentColor"
                   strokeWidth="2"
                   style={{ opacity: 0.5 }}
+                  aria-hidden="true"
                 >
                   <path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10L12 2Z" />
                 </svg>
