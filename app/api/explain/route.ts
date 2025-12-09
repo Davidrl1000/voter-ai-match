@@ -4,10 +4,6 @@ import { formatMatchingExplanationPrompt } from '@/lib/training/prompts-es-cr';
 import { logProgress } from '@/lib/training/utils';
 import { POLICY_AREA_LABELS, OPENAI_MODELS } from '@/lib/constants';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 interface CandidateMatch {
   candidateId: string;
   name: string;
@@ -19,10 +15,22 @@ interface CandidateMatch {
 export async function POST(request: NextRequest) {
   try {
     // Validate OpenAI API key is configured
+    console.log('API /api/explain called');
+    console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+    console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
+
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set in environment variables');
-      return new Response('OpenAI API key not configured', { status: 500 });
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
+
+    // Initialize OpenAI client inside function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const body = await request.json();
     const { matches, questionCount } = body as {
