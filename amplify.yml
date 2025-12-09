@@ -1,0 +1,36 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm ci
+        - npm run build
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+compute:
+  - identifier: nextSSRFunction
+    buildCommand: npm run build
+    environment:
+      # Enable Lambda response streaming
+      - name: AWS_LWA_INVOKE_MODE
+        value: response_stream
+      - name: AWS_LAMBDA_EXEC_WRAPPER
+        value: /opt/bootstrap
+    invokeMode: RESPONSE_STREAM
+    runtime:
+      name: nodejs
+      version: '20'
+    timeout: 60

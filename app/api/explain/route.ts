@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
       questionCount,
     });
 
-    // Enable streaming for ChatGPT-like experience using SSE (better CloudFront compatibility)
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODELS.EXPLANATION,
       messages: [{ role: 'user', content: prompt }],
