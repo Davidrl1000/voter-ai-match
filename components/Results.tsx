@@ -184,9 +184,9 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             transition: 'opacity 0.5s ease-out, transform 0.5s ease-out, max-height 0.7s ease-out'
           }}
         >
-          <div className="bg-white border border-gray-200 rounded-xl p-6 overflow-hidden">
+          <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 border-2 border-blue-100 rounded-xl p-6 overflow-hidden shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5">
+              <div className={`w-5 h-5 ${isStreaming && !aiExplanation ? 'animate-pulse' : ''}`}>
                 <Image
                   src="/assets/icons/ai-sparkle.svg"
                   alt=""
@@ -195,21 +195,59 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                   className="w-full h-full"
                 />
               </div>
-              <h2 className="text-base font-semibold text-gray-900">
+              <h2 className="text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Análisis con IA
               </h2>
-              {isStreaming && (
-                <span className="ml-auto text-xs text-blue-600">
-                  Analizando...
+              {isStreaming && !aiExplanation && (
+                <span className="ml-auto flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </div>
+                  <span className="text-xs font-medium text-blue-600">Generando...</span>
                 </span>
               )}
             </div>
-            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {aiExplanation}
-              {isStreaming && aiExplanation && (
-                <span className="relative top-[3px] inline-block w-0.5 h-4 bg-blue-600 ml-0.5 animate-pulse"></span>
-              )}
-            </div>
+
+            {/* Loading State - Before content starts */}
+            {isStreaming && !aiExplanation && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                  <div className="flex-shrink-0">
+                    <div className="relative w-10 h-10">
+                      <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                      <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      Analizando tus respuestas...
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      La IA está comparando tus posiciones con los candidatos
+                    </p>
+                  </div>
+                </div>
+
+                {/* Skeleton loading bars */}
+                <div className="space-y-2 px-1">
+                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '95%' }}></div>
+                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '88%', animationDelay: '75ms' }}></div>
+                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '92%', animationDelay: '150ms' }}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Streaming/Final Content */}
+            {aiExplanation && (
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {aiExplanation}
+                {isStreaming && (
+                  <span className="relative top-[3px] inline-block w-0.5 h-4 bg-blue-600 ml-0.5 animate-pulse"></span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
