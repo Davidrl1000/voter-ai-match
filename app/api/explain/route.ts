@@ -18,6 +18,12 @@ interface CandidateMatch {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set in environment variables');
+      return new Response('OpenAI API key not configured', { status: 500 });
+    }
+
     const body = await request.json();
     const { matches, questionCount } = body as {
       matches: CandidateMatch[];
@@ -70,40 +76,33 @@ export async function POST(request: NextRequest) {
       questionCount,
     });
 
-    const stream = await openai.chat.completions.create({
+    // Use non-streaming for better compatibility with AWS Amplify/CloudFront
+    const completion = await openai.chat.completions.create({
       model: OPENAI_MODELS.EXPLANATION,
       messages: [{ role: 'user', content: prompt }],
-      stream: true,
+      stream: false,
       temperature: 0.7,
       max_tokens: 400,
     });
 
-    const encoder = new TextEncoder();
+    const explanation = completion.choices[0]?.message?.content || '';
 
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content || '';
-            if (text) {
-              controller.enqueue(encoder.encode(text));
-            }
-          }
-          controller.close();
-        } catch (error) {
-          controller.error(error);
-        }
-      },
-    });
-
-    return new Response(readableStream, {
+    return new Response(explanation, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
       },
     });
   } catch (error) {
-    console.error('Error generating explanation:', error);
-    return new Response('Failed to generate explanation', { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error generating explanation:', errorMessage);
+    console.error('Full error:', error);
+
+    // Check if it's an API key issue
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set');
+      return new Response('OpenAI API key not configured', { status: 500 });
+    }
+
+    return new Response(`Failed to generate explanation: ${errorMessage}`, { status: 500 });
   }
 }

@@ -40,7 +40,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
   const hasCalculatedRef = useRef(false);
 
   const streamExplanation = useCallback(async (matchesData: CandidateMatch[]) => {
-    // Prevent multiple streams
+    // Prevent multiple requests
     if (hasStreamedRef.current) return;
     hasStreamedRef.current = true;
 
@@ -63,21 +63,20 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('Failed to generate explanation');
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const explanation = await response.text();
 
-      if (!reader) {
-        throw new Error('No reader available');
-      }
+      // Simulate streaming effect for better UX
+      const words = explanation.split(' ');
+      let currentText = '';
 
-      // By updating state directly, we keep the component declarative and robust.
-      // React 18+ batches these updates, so performance is excellent.
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for (let i = 0; i < words.length; i++) {
+        currentText += (i > 0 ? ' ' : '') + words[i];
+        setAiExplanation(currentText);
 
-        const text = decoder.decode(value, { stream: true });
-        setAiExplanation((prev) => prev + text);
+        // Small delay between words for streaming effect
+        if (i < words.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 30));
+        }
       }
 
       setIsStreaming(false);
