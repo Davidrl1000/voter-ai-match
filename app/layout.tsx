@@ -7,9 +7,11 @@ import GitHubLink from "@/components/GitHubLink";
 import { AggregatedStatsWidget } from "@/components/aggregated-stats-widget";
 
 // Analytics IDs from environment variables
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;
+// Only load analytics in production to avoid CORS errors in development
+const isProduction = process.env.NODE_ENV === 'production';
+const GA_MEASUREMENT_ID = isProduction ? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID : null;
+const GTM_ID = isProduction ? process.env.NEXT_PUBLIC_GTM_ID : null;
+const CLARITY_ID = isProduction ? process.env.NEXT_PUBLIC_CLARITY_ID : null;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,12 +25,26 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Votante AI - Encuentra tu candidato ideal para Costa Rica 2026",
-  description: "Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Powered by AI.",
-  keywords: ["votante ai", "elecciones costa rica 2026", "candidatos presidenciales", "inteligencia artificial", "matching politico", "quiz politico"],
+  description: "Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Responde preguntas sobre política, economía, salud, educación y más. Sistema imparcial powered by AI con análisis en 7 áreas clave.",
+  keywords: [
+    "votante ai",
+    "elecciones costa rica 2026",
+    "candidatos presidenciales costa rica",
+    "quiz político costa rica",
+    "matching político",
+    "inteligencia artificial política",
+    "comparar candidatos",
+    "votación informada",
+    "análisis político ai",
+    "elecciones presidenciales",
+  ],
   authors: [{ name: "Votante AI" }],
   creator: "Votante AI",
   publisher: "Votante AI",
   metadataBase: new URL('https://votante-ai.com'),
+  alternates: {
+    canonical: '/',
+  },
   robots: {
     index: true,
     follow: true,
@@ -43,20 +59,39 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_CR',
-    url: 'https://votant-eai.com',
+    url: 'https://votante-ai.com',
     title: 'Votante AI - Encuentra tu candidato ideal para Costa Rica 2026',
-    description: 'Descubre qué candidato presidencial se alinea mejor con tus valores políticos. Powered by AI.',
+    description: 'Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Sistema imparcial powered by AI con análisis en 7 áreas clave: economía, salud, educación, seguridad, ambiente, derechos sociales y corrupción.',
     siteName: 'Votante AI',
+    images: [
+      {
+        url: '/assets/icons/ai-sparkle.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Votante AI - Sistema de matching político para Costa Rica 2026',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Votante AI - Encuentra tu candidato ideal',
-    description: 'Descubre qué candidato presidencial se alinea mejor con tus valores políticos para Costa Rica 2026.',
+    title: 'Votante AI - Encuentra tu candidato ideal para Costa Rica 2026',
+    description: 'Sistema imparcial powered by AI. Responde preguntas y descubre qué candidato presidencial se alinea mejor con tus valores políticos.',
+    images: ['/assets/icons/ai-sparkle.svg'],
+    creator: '@votanteai',
+    site: '@votanteai',
   },
   icons: {
     icon: '/assets/icons/ai-sparkle.svg',
     shortcut: '/assets/icons/ai-sparkle.svg',
     apple: '/assets/icons/ai-sparkle.svg',
+  },
+  manifest: '/manifest.json',
+  category: 'Politics',
+  applicationName: 'Votante AI',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Votante AI',
   },
 };
 
@@ -139,6 +174,62 @@ export default function RootLayout({
             }}
           />
         )}
+
+        {/* Structured Data (JSON-LD) for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'Votante AI',
+              applicationCategory: 'Political Information',
+              operatingSystem: 'Web',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              description:
+                'Sistema de matching político imparcial powered by AI para las elecciones presidenciales de Costa Rica 2026. Ayuda a los votantes a descubrir qué candidato se alinea mejor con sus valores.',
+              url: 'https://votante-ai.com',
+              inLanguage: 'es-CR',
+              creator: {
+                '@type': 'Organization',
+                name: 'Votante AI',
+                url: 'https://votante-ai.com',
+              },
+              featureList: [
+                'Análisis político imparcial',
+                'Matching basado en inteligencia artificial',
+                'Comparación de candidatos en 7 áreas clave',
+                'Resultados personalizados',
+                'Privacidad garantizada',
+              ],
+              keywords:
+                'elecciones costa rica 2026, candidatos presidenciales, quiz político, matching político, inteligencia artificial',
+            }),
+          }}
+        />
+
+        {/* Organization Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Votante AI',
+              url: 'https://votante-ai.com',
+              logo: 'https://votante-ai.com/assets/icons/ai-sparkle.svg',
+              description:
+                'Plataforma de información política imparcial para las elecciones de Costa Rica 2026.',
+              sameAs: [
+                'https://github.com/Davidrl1000/voter-ai-match',
+              ],
+            }),
+          }}
+        />
 
         {/* Skip to main content for screen readers and keyboard navigation */}
         <a

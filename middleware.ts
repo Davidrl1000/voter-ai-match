@@ -81,6 +81,20 @@ function addSecurityHeaders(response: NextResponse): void {
     'camera=(), microphone=(), geolocation=()'
   );
 
+  // HSTS - Force HTTPS (only in production)
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
+
+  // Cross-Origin-Opener-Policy for isolation
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+
+  // Cross-Origin-Embedder-Policy
+  response.headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
+
   // Content Security Policy for XSS protection
   const csp = [
     "default-src 'self'",
@@ -90,6 +104,10 @@ function addSecurityHeaders(response: NextResponse): void {
     "img-src 'self' data: https: blob:",
     "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://*.clarity.ms",
     "frame-src 'self' https://www.googletagmanager.com",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
   ].join('; ');
 
   response.headers.set('Content-Security-Policy', csp);

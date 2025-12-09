@@ -82,7 +82,7 @@ export default function CandidatesPage() {
 
           {/* Footer Note */}
           <div className="mt-10 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600">
               La información presentada es únicamente informativa. Investiga a cada candidato antes de votar.
             </p>
           </div>
