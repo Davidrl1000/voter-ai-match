@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       questionCount,
     });
 
-    // Enable streaming for ChatGPT-like experience
+    // Enable streaming for ChatGPT-like experience using SSE (better CloudFront compatibility)
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODELS.EXPLANATION,
       messages: [{ role: 'user', content: prompt }],
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 400,
     });
 
-    // Create a ReadableStream for real-time streaming
+    // Create a ReadableStream using Server-Sent Events format
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -93,21 +93,28 @@ export async function POST(request: NextRequest) {
           for await (const chunk of completion) {
             const text = chunk.choices[0]?.delta?.content || '';
             if (text) {
-              controller.enqueue(encoder.encode(text));
+              // SSE format: data: {content}\n\n
+              const sseMessage = `data: ${JSON.stringify({ content: text })}\n\n`;
+              controller.enqueue(encoder.encode(sseMessage));
             }
           }
+          // Send final message
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         } catch (error) {
           console.error('Streaming error:', error);
-          controller.error(error);
+          const errorMessage = `data: ${JSON.stringify({ error: 'Streaming failed' })}\n\n`;
+          controller.enqueue(encoder.encode(errorMessage));
+          controller.close();
         }
       },
     });
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
     });

@@ -63,7 +63,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('Failed to generate explanation');
       }
 
-      // Real streaming - read the response body as a stream
+      // SSE streaming - read Server-Sent Events
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -72,6 +72,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       }
 
       let accumulatedText = '';
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -80,12 +81,32 @@ export default function Results({ answers, onRestart }: ResultsProps) {
           break;
         }
 
-        // Decode the chunk and append to accumulated text
-        const chunk = decoder.decode(value, { stream: true });
-        accumulatedText += chunk;
+        // Decode the chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
 
-        // Update state with accumulated text for smooth ChatGPT-like streaming
-        setAiExplanation(accumulatedText);
+        // Process complete SSE messages (ending with \n\n)
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || ''; // Keep incomplete message in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6); // Remove 'data: ' prefix
+
+            if (data === '[DONE]') {
+              break;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                accumulatedText += parsed.content;
+                setAiExplanation(accumulatedText);
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE data:', e);
+            }
+          }
+        }
       }
 
       setIsStreaming(false);
