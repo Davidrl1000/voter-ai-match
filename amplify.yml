@@ -14,3 +14,10 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
+compute:
+  - identifier: nextSSRFunction
+    buildCommand: npm run build
+    runtime:
+      name: nodejs
+      version: '20'
+    timeout: 60
