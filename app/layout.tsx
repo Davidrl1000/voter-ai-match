@@ -7,9 +7,11 @@ import GitHubLink from "@/components/GitHubLink";
 import { AggregatedStatsWidget } from "@/components/aggregated-stats-widget";
 
 // Analytics IDs from environment variables
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID;
+// Only load analytics in production to avoid CORS errors in development
+const isProduction = process.env.NODE_ENV === 'production';
+const GA_MEASUREMENT_ID = isProduction ? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID : null;
+const GTM_ID = isProduction ? process.env.NEXT_PUBLIC_GTM_ID : null;
+const CLARITY_ID = isProduction ? process.env.NEXT_PUBLIC_CLARITY_ID : null;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
