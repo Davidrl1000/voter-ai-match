@@ -27,6 +27,9 @@ export const GTMEvents = {
   HOME_START_QUIZ: 'home_start_quiz',
   HOME_VIEW_CANDIDATES: 'home_view_candidates',
   HOME_GITHUB_CLICK: 'home_github_click',
+  HOME_QUESTION_COUNT_SELECTED: 'home_question_count_selected',
+  HOME_POLICY_AREAS_OPENED: 'home_policy_areas_opened',
+  HOME_POLICY_AREAS_CLOSED: 'home_policy_areas_closed',
 
   // Quiz Events
   QUIZ_STARTED: 'quiz_started',

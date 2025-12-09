@@ -136,7 +136,7 @@ export default function Home() {
                   key={option.count}
                   onClick={() => {
                     setQuestionLimit(option.count);
-                    trackGTMEvent('home_question_count_selected', {
+                    trackGTMEvent(GTMEvents.HOME_QUESTION_COUNT_SELECTED, {
                       count: option.count,
                       label: option.label,
                     });
@@ -189,7 +189,7 @@ export default function Home() {
           <button
             onClick={() => {
               setShowAreasModal(true);
-              trackGTMEvent('home_policy_areas_opened');
+              trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
             }}
             className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95"
           >
@@ -245,7 +245,7 @@ export default function Home() {
           isOpen={showAreasModal}
           onClose={() => {
             setShowAreasModal(false);
-            trackGTMEvent('home_policy_areas_closed');
+            trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_CLOSED);
           }}
           title="Áreas de Política"
         >

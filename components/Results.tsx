@@ -116,17 +116,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     if (!topMatch) return null;
 
     return (
-      <div
-        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6 cursor-pointer"
-        onClick={() => {
-          trackGTMEvent(GTMEvents.RESULTS_CANDIDATE_CARD_CLICKED, {
-            candidateName: topMatch.name,
-            party: topMatch.party,
-            score: topMatch.score,
-            position: 1,
-          });
-        }}
-      >
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
           {/* Candidate Photo with Flag */}
           <div className="relative flex-shrink-0">
@@ -192,15 +182,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     return matches.slice(1).map((match, index) => (
       <div
         key={match.candidateId}
-        className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors cursor-pointer"
-        onClick={() => {
-          trackGTMEvent(GTMEvents.RESULTS_CANDIDATE_CARD_CLICKED, {
-            candidateName: match.name,
-            party: match.party,
-            score: match.score,
-            position: index + 2,
-          });
-        }}
+        className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors"
       >
         <div className="flex items-start gap-4 mb-3">
           {/* Candidate Photo with Ranking Badge */}

@@ -32,10 +32,10 @@ function handleApiRequest(request: NextRequest): NextResponse {
     getOriginFromReferer(request.headers.get('Referer') ?? '') ||
     '';
 
-  // Check if origin is allowed
-  const isAllowedOrigin = allowedOrigins.some((allowed) =>
-    origin.includes((allowed || '').replace(/^https?:\/\//, ''))
-  );
+  // Check if origin is allowed (exact match for security)
+  const isAllowedOrigin =
+    allowedOrigins.includes(origin) ||
+    (origin.includes('localhost') && allowedOrigins.some((allowed) => allowed?.includes('localhost')));
 
   // Handle preflight requests (OPTIONS)
   if (request.method === 'OPTIONS') {
@@ -73,12 +73,26 @@ function handleApiRequest(request: NextRequest): NextResponse {
 function addSecurityHeaders(response: NextResponse): void {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
+  // X-XSS-Protection is deprecated but kept for legacy browser support
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set(
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=()'
   );
+
+  // Content Security Policy for XSS protection
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://scripts.clarity.ms",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: https: blob:",
+    "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://*.clarity.ms",
+    "frame-src 'self' https://www.googletagmanager.com",
+  ].join('; ');
+
+  response.headers.set('Content-Security-Policy', csp);
 }
 
 export function middleware(request: NextRequest) {
