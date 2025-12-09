@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { formatMatchingExplanationPrompt } from '@/lib/training/prompts-es-cr';
 import { logProgress } from '@/lib/training/utils';
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
 
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set in environment variables');
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured' },
+        { status: 500 }
+      );
     }
 
     // Initialize OpenAI client inside function
@@ -40,19 +40,19 @@ export async function POST(request: NextRequest) {
 
     if (!matches || matches.length === 0) {
       logProgress('Error: No matches provided for explanation');
-      return new Response('No matches provided', { status: 400 });
+      return NextResponse.json({ error: 'No matches provided' }, { status: 400 });
     }
 
     if (!questionCount || questionCount < 1) {
       logProgress('Error: Invalid question count');
-      return new Response('Invalid question count', { status: 400 });
+      return NextResponse.json({ error: 'Invalid question count' }, { status: 400 });
     }
 
     const topMatches = matches.slice(0, 3);
 
     // Ensure we have at least one match
     if (topMatches.length === 0) {
-      return new Response('No matches found', { status: 400 });
+      return NextResponse.json({ error: 'No matches found' }, { status: 400 });
     }
 
     // Format alignment areas for the top candidate
@@ -96,12 +96,7 @@ export async function POST(request: NextRequest) {
 
     const explanation = completion.choices[0]?.message?.content || '';
 
-    return new Response(JSON.stringify({ explanation }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-      },
-    });
+    return NextResponse.json({ explanation });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error generating explanation:', errorMessage);
@@ -110,9 +105,15 @@ export async function POST(request: NextRequest) {
     // Check if it's an API key issue
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set');
-      return new Response('OpenAI API key not configured', { status: 500 });
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured' },
+        { status: 500 }
+      );
     }
 
-    return new Response(`Failed to generate explanation: ${errorMessage}`, { status: 500 });
+    return NextResponse.json(
+      { error: `Failed to generate explanation: ${errorMessage}` },
+      { status: 500 }
+    );
   }
 }
