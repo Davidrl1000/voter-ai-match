@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 import Flag from './Flag';
 
 export default function Header() {
@@ -40,6 +41,9 @@ export default function Header() {
           {/* Logo/Title */}
           <button
             onClick={() => {
+              trackGTMEvent(GTMEvents.CANDIDATES_BACK_HOME, {
+                source: 'header_logo',
+              });
               // Always force reload to reset state
               window.location.href = '/';
             }}
@@ -79,6 +83,9 @@ export default function Header() {
             <button
               onClick={() => {
                 setIsMenuOpen(false);
+                trackGTMEvent(GTMEvents.CANDIDATES_BACK_HOME, {
+                  source: 'header_menu',
+                });
                 // Always force reload to reset state
                 window.location.href = '/';
               }}
@@ -88,14 +95,24 @@ export default function Header() {
             </button>
             <Link
               href="/candidates"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => {
+                setIsMenuOpen(false);
+                trackGTMEvent(GTMEvents.HOME_VIEW_CANDIDATES, {
+                  source: 'header_menu',
+                });
+              }}
               className="block px-4 py-3 text-sm text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors font-medium"
             >
               Candidatos
             </Link>
             <Link
               href="/notes"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => {
+                setIsMenuOpen(false);
+                trackGTMEvent(GTMEvents.NOTES_BACK_HOME, {
+                  source: 'header_menu',
+                });
+              }}
               className="block px-4 py-3 text-sm text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors font-medium"
             >
               Información

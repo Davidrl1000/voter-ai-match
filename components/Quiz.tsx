@@ -5,6 +5,7 @@ import Image from 'next/image';
 import type { Question } from '@/lib/db/dynamodb';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
+import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 import LoadingSpinner from './LoadingSpinner';
 
 interface QuizProps {
@@ -67,6 +68,15 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
       questionEmbedding: currentQuestion.embedding,
     };
 
+    // Track question answered
+    trackGTMEvent(GTMEvents.QUIZ_QUESTION_ANSWERED, {
+      questionNumber: currentIndex + 1,
+      policyArea: currentQuestion.policyArea,
+      policyAreaLabel: POLICY_AREA_LABELS[currentQuestion.policyArea],
+      answerValue: selectedAnswer,
+      totalQuestions: questions.length,
+    });
+
     let newAnswers;
     if (currentIndex < answers.length) {
       // Re-answering a previous question - replace just this answer, keep all others
@@ -91,6 +101,11 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
         setSelectedAnswer(null);
       }
     } else {
+      // Track quiz completion
+      trackGTMEvent(GTMEvents.QUIZ_COMPLETED, {
+        totalQuestions: questions.length,
+        answeredQuestions: newAnswers.length,
+      });
       onComplete(newAnswers);
     }
   }, [selectedAnswer, currentQuestion, currentIndex, answers, questions.length, onComplete]);
