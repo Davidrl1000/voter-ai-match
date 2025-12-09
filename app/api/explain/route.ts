@@ -84,19 +84,43 @@ export async function POST(request: NextRequest) {
       questionCount,
     });
 
-    // Non-streaming for Amplify compatibility
-    // Frontend simulates streaming for ChatGPT-like UX
-    const completion = await openai.chat.completions.create({
+    // Real streaming with Server-Sent Events (SSE)
+    const stream = await openai.chat.completions.create({
       model: OPENAI_MODELS.EXPLANATION,
       messages: [{ role: 'user', content: prompt }],
-      stream: false,
+      stream: true,
       temperature: 0.7,
       max_tokens: 400,
     });
 
-    const explanation = completion.choices[0]?.message?.content || '';
+    // Create a ReadableStream to send SSE chunks
+    const encoder = new TextEncoder();
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            const text = chunk.choices[0]?.delta?.content || '';
+            if (text) {
+              // Send as SSE format: "data: <text>\n\n"
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+            }
+          }
+          // Send completion signal
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      },
+    });
 
-    return NextResponse.json({ explanation });
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error generating explanation:', errorMessage);

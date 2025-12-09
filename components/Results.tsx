@@ -63,36 +63,51 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('Failed to generate explanation');
       }
 
-      const data = await response.json();
-      const explanation = data.explanation || '';
+      // Real SSE streaming
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
 
-      // Simulate ChatGPT-like streaming with smooth character-by-character display
-      let currentIndex = 0;
+      if (!reader) {
+        throw new Error('No response body');
+      }
 
-      const streamNextChunk = () => {
-        if (currentIndex >= explanation.length) {
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
           setIsStreaming(false);
-          return;
+          break;
         }
 
-        // Stream in chunks of 1-3 characters for natural flow
-        const chunkSize = Math.random() > 0.7 ? 2 : 1;
-        currentIndex += chunkSize;
+        // Decode chunk
+        const chunk = decoder.decode(value, { stream: true });
 
-        setAiExplanation(explanation.substring(0, currentIndex));
+        // Parse SSE messages (format: "data: {...}\n\n")
+        const lines = chunk.split('\n');
 
-        // Variable timing for natural feel
-        const char = explanation[currentIndex - 1];
-        let delay = 20; // Base speed
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6); // Remove "data: " prefix
 
-        if (char === ' ') delay = 15; // Faster through spaces
-        else if (['.', '!', '?', ':'].includes(char)) delay = 150; // Pause at sentence ends
-        else if ([',', ';'].includes(char)) delay = 80; // Brief pause at commas
+            if (data === '[DONE]') {
+              setIsStreaming(false);
+              break;
+            }
 
-        setTimeout(streamNextChunk, delay);
-      };
-
-      streamNextChunk();
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                accumulated += parsed.text;
+                setAiExplanation(accumulated);
+              }
+            } catch {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+      }
     } catch (err) {
       console.error('Error streaming explanation:', err);
       setIsStreaming(false);
