@@ -63,20 +63,29 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('Failed to generate explanation');
       }
 
-      const explanation = await response.text();
+      // Real streaming - read the response body as a stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
 
-      // Simulate streaming effect for better UX
-      const words = explanation.split(' ');
-      let currentText = '';
+      if (!reader) {
+        throw new Error('No reader available');
+      }
 
-      for (let i = 0; i < words.length; i++) {
-        currentText += (i > 0 ? ' ' : '') + words[i];
-        setAiExplanation(currentText);
+      let accumulatedText = '';
 
-        // Small delay between words for streaming effect
-        if (i < words.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 30));
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
         }
+
+        // Decode the chunk and append to accumulated text
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedText += chunk;
+
+        // Update state with accumulated text for smooth ChatGPT-like streaming
+        setAiExplanation(accumulatedText);
       }
 
       setIsStreaming(false);

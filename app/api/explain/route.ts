@@ -76,20 +76,39 @@ export async function POST(request: NextRequest) {
       questionCount,
     });
 
-    // Use non-streaming for better compatibility with AWS Amplify/CloudFront
+    // Enable streaming for ChatGPT-like experience
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODELS.EXPLANATION,
       messages: [{ role: 'user', content: prompt }],
-      stream: false,
+      stream: true,
       temperature: 0.7,
       max_tokens: 400,
     });
 
-    const explanation = completion.choices[0]?.message?.content || '';
+    // Create a ReadableStream for real-time streaming
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of completion) {
+            const text = chunk.choices[0]?.delta?.content || '';
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+          controller.close();
+        } catch (error) {
+          console.error('Streaming error:', error);
+          controller.error(error);
+        }
+      },
+    });
 
-    return new Response(explanation, {
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
       },
     });
   } catch (error) {
