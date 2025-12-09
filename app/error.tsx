@@ -96,7 +96,7 @@ export default function Error({ error, reset }: ErrorProps) {
           </div>
 
           {/* Footer Note */}
-          <p className="mt-8 text-sm text-gray-400">
+          <p className="mt-8 text-sm text-gray-600">
             Si el problema persiste, por favor contáctanos.
           </p>
         </div>

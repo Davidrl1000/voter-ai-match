@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Header from '@/components/Header';
-import Quiz from '@/components/Quiz';
-import Results from '@/components/Results';
 import InfoModal from '@/components/InfoModal';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import type { Question } from '@/lib/db/dynamodb';
@@ -12,6 +11,15 @@ import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '
 import { Stage } from '@/lib/types/stage';
 import type { Stage as StageType } from '@/lib/types/stage';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+
+// Dynamically import heavy components to reduce initial bundle size
+const Quiz = dynamic(() => import('@/components/Quiz'), {
+  loading: () => <div className="min-h-screen flex items-center justify-center">Cargando...</div>,
+});
+
+const Results = dynamic(() => import('@/components/Results'), {
+  loading: () => <div className="min-h-screen flex items-center justify-center">Cargando resultados...</div>,
+});
 
 export default function Home() {
   const [stage, setStage] = useState<StageType>(Stage.WELCOME);
@@ -118,7 +126,7 @@ export default function Home() {
             Encuentra tu candidato ideal
           </p>
 
-          <p className="text-sm sm:text-base text-gray-500">
+          <p className="text-sm sm:text-base text-gray-600">
             Costa Rica 2026
           </p>
         </div>
@@ -156,7 +164,7 @@ export default function Home() {
                     <div className={`text-sm font-medium mb-1 ${questionLimit === option.count ? 'text-blue-600' : 'text-gray-700'}`}>
                       {option.label}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-600">
                       {option.description}
                     </div>
                   </div>
@@ -181,7 +189,7 @@ export default function Home() {
             <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 tabular-nums">
               {questionLimit}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-600">
               Preguntas
             </div>
           </div>
@@ -214,7 +222,7 @@ export default function Home() {
             <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 tabular-nums">
               ~{Math.ceil(questionLimit / 4)}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-600">
               Min
             </div>
           </div>
@@ -226,7 +234,7 @@ export default function Home() {
             setShowPrivacyModal(true);
             trackGTMEvent(GTMEvents.SECURITY_MESSAGE_SHOWN);
           }}
-          className="flex items-center justify-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer mx-auto"
+          className="flex items-center justify-center gap-2 text-xs text-gray-600 hover:text-gray-900 transition-colors cursor-pointer mx-auto"
         >
           <div className="w-3.5 h-3.5">
             <Image

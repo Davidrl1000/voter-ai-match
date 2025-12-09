@@ -55,7 +55,7 @@ export default function NotFound() {
 
           {/* Helpful Links */}
           <div className="mt-8 pt-8 border-t border-gray-200">
-            <p className="text-sm text-gray-500 mb-3">
+            <p className="text-sm text-gray-600 mb-3">
               Enlaces útiles:
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
@@ -65,14 +65,14 @@ export default function NotFound() {
               >
                 Inicio
               </Link>
-              <span className="text-gray-300">•</span>
+              <span className="text-gray-400">•</span>
               <Link
                 href="/candidates"
                 className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-2"
               >
                 Candidatos
               </Link>
-              <span className="text-gray-300">•</span>
+              <span className="text-gray-400">•</span>
               <Link
                 href="/notes"
                 className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-2"

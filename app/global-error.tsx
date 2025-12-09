@@ -211,7 +211,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               <p style={{
                 marginTop: '2rem',
                 fontSize: '0.875rem',
-                color: '#9ca3af',
+                color: '#4b5563',
               }}>
                 Si el problema persiste, por favor contáctanos.
               </p>

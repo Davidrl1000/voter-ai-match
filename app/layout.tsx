@@ -25,7 +25,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Votante AI - Encuentra tu candidato ideal para Costa Rica 2026",
-  description: "Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Powered by AI.",
+  description: "Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Responde preguntas sobre política, economía, salud, educación y más. Sistema imparcial powered by AI con análisis en 7 áreas clave.",
   keywords: ["votante ai", "elecciones costa rica 2026", "candidatos presidenciales", "inteligencia artificial", "matching politico", "quiz politico"],
   authors: [{ name: "Votante AI" }],
   creator: "Votante AI",

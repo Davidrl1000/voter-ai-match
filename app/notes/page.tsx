@@ -122,7 +122,7 @@ export default function NotesPage() {
                 El propósito de esta herramienta es aportar claridad en un entorno saturado de información, combatir la desinformación y promover un proceso electoral más transparente y accesible para todos.
               </p>
 
-              <p className="leading-relaxed text-gray-400 text-sm">
+              <p className="leading-relaxed text-gray-600 text-sm">
                 Conceptualizado y desarrollado por <a
                   href="https://www.linkedin.com/in/davidrl1000"
                   className="underline"
