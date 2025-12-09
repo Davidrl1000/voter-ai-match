@@ -63,53 +63,36 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('Failed to generate explanation');
       }
 
-      // SSE streaming - read Server-Sent Events
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const data = await response.json();
+      const explanation = data.explanation || '';
 
-      if (!reader) {
-        throw new Error('No reader available');
-      }
+      // Simulate ChatGPT-like streaming with smooth character-by-character display
+      let currentIndex = 0;
 
-      let accumulatedText = '';
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          break;
+      const streamNextChunk = () => {
+        if (currentIndex >= explanation.length) {
+          setIsStreaming(false);
+          return;
         }
 
-        // Decode the chunk and add to buffer
-        buffer += decoder.decode(value, { stream: true });
+        // Stream in chunks of 1-3 characters for natural flow
+        const chunkSize = Math.random() > 0.7 ? 2 : 1;
+        currentIndex += chunkSize;
 
-        // Process complete SSE messages (ending with \n\n)
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || ''; // Keep incomplete message in buffer
+        setAiExplanation(explanation.substring(0, currentIndex));
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6); // Remove 'data: ' prefix
+        // Variable timing for natural feel
+        const char = explanation[currentIndex - 1];
+        let delay = 20; // Base speed
 
-            if (data === '[DONE]') {
-              break;
-            }
+        if (char === ' ') delay = 15; // Faster through spaces
+        else if (['.', '!', '?', ':'].includes(char)) delay = 150; // Pause at sentence ends
+        else if ([',', ';'].includes(char)) delay = 80; // Brief pause at commas
 
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.content) {
-                accumulatedText += parsed.content;
-                setAiExplanation(accumulatedText);
-              }
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e);
-            }
-          }
-        }
-      }
+        setTimeout(streamNextChunk, delay);
+      };
 
-      setIsStreaming(false);
+      streamNextChunk();
     } catch (err) {
       console.error('Error streaming explanation:', err);
       setIsStreaming(false);
@@ -224,7 +207,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
               {aiExplanation}
               {isStreaming && aiExplanation && (
-                <span className="inline-block w-0.5 h-4 bg-blue-600 ml-0.5 animate-pulse"></span>
+                <span className="relative top-[3px] inline-block w-0.5 h-4 bg-blue-600 ml-0.5 animate-pulse"></span>
               )}
             </div>
           </div>

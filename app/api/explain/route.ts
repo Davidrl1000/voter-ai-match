@@ -76,45 +76,22 @@ export async function POST(request: NextRequest) {
       questionCount,
     });
 
+    // Non-streaming for Amplify compatibility
+    // Frontend simulates streaming for ChatGPT-like UX
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODELS.EXPLANATION,
       messages: [{ role: 'user', content: prompt }],
-      stream: true,
+      stream: false,
       temperature: 0.7,
       max_tokens: 400,
     });
 
-    // Create a ReadableStream using Server-Sent Events format
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of completion) {
-            const text = chunk.choices[0]?.delta?.content || '';
-            if (text) {
-              // SSE format: data: {content}\n\n
-              const sseMessage = `data: ${JSON.stringify({ content: text })}\n\n`;
-              controller.enqueue(encoder.encode(sseMessage));
-            }
-          }
-          // Send final message
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-        } catch (error) {
-          console.error('Streaming error:', error);
-          const errorMessage = `data: ${JSON.stringify({ error: 'Streaming failed' })}\n\n`;
-          controller.enqueue(encoder.encode(errorMessage));
-          controller.close();
-        }
-      },
-    });
+    const explanation = completion.choices[0]?.message?.content || '';
 
-    return new Response(stream, {
+    return new Response(JSON.stringify({ explanation }), {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        'Connection': 'keep-alive',
-        'X-Accel-Buffering': 'no',
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
       },
     });
   } catch (error) {
