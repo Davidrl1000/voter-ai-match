@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { UserAnswer } from '@/lib/matching/algorithm';
@@ -45,7 +45,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     hasStreamedRef.current = true;
 
     setIsStreaming(true);
-    setAiExplanation(''); // Reset explanation
+    setAiExplanation('');
 
     try {
       const response = await fetch('/api/explain', {
@@ -63,57 +63,190 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         throw new Error('Failed to generate explanation');
       }
 
-      // Real SSE streaming
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const data = await response.json();
+      const explanation = data.explanation || '';
 
-      if (!reader) {
-        throw new Error('No response body');
-      }
+      // Client-side streaming simulation (Amplify buffers real SSE)
+      let currentIndex = 0;
 
-      let accumulated = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
+      const streamNextChunk = () => {
+        if (currentIndex >= explanation.length) {
           setIsStreaming(false);
-          break;
+          return;
         }
 
-        // Decode chunk
-        const chunk = decoder.decode(value, { stream: true });
+        // Stream 1-2 characters for natural flow
+        const chunkSize = Math.random() > 0.7 ? 2 : 1;
+        currentIndex += chunkSize;
 
-        // Parse SSE messages (format: "data: {...}\n\n")
-        const lines = chunk.split('\n');
+        setAiExplanation(explanation.substring(0, currentIndex));
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6); // Remove "data: " prefix
+        // Variable timing for natural feel
+        const char = explanation[currentIndex - 1];
+        let delay = 20; // Base speed
 
-            if (data === '[DONE]') {
-              setIsStreaming(false);
-              break;
-            }
+        if (char === ' ') delay = 15; // Faster through spaces
+        else if (['.', '!', '?', ':'].includes(char)) delay = 150; // Pause at sentence ends
+        else if ([',', ';'].includes(char)) delay = 80; // Brief pause at commas
 
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.text) {
-                accumulated += parsed.text;
-                setAiExplanation(accumulated);
-              }
-            } catch {
-              // Ignore parse errors for incomplete chunks
-            }
-          }
-        }
-      }
+        setTimeout(streamNextChunk, delay);
+      };
+
+      streamNextChunk();
     } catch (err) {
       console.error('Error streaming explanation:', err);
       setIsStreaming(false);
-      hasStreamedRef.current = false; // Reset on error
+      hasStreamedRef.current = false;
     }
   }, [answers.length]);
+
+  // Memoize candidate cards to prevent re-renders during AI streaming
+  // Must be before early returns to satisfy React Hooks rules
+  const topMatch = matches[0];
+
+  const topMatchCard = useMemo(() => {
+    if (!topMatch) return null;
+
+    return (
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+          {/* Candidate Photo with Flag */}
+          <div className="relative flex-shrink-0">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/20">
+              <Image
+                src={getPhotoPath(topMatch.party)}
+                alt={topMatch.name}
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+            {/* Party Flag Badge */}
+            <div className="absolute bottom-0 right-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
+              <Image
+                src={getLogoPath(topMatch.party)}
+                alt={topMatch.party}
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Candidate Info */}
+          <div className="flex-1">
+            <p className="text-blue-100 text-xs uppercase tracking-wide mb-1">
+              Tu mejor coincidencia
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold">{topMatch.name}</h2>
+            <p className="text-blue-100 mt-1 text-sm">{topMatch.party}</p>
+          </div>
+
+          {/* Score */}
+          <div className="text-left sm:text-right">
+            <div className="text-4xl sm:text-5xl font-bold tabular-nums">{formatScore(topMatch.score)}%</div>
+            <p className="text-blue-100 text-xs mt-1">Compatibilidad</p>
+          </div>
+        </div>
+
+        <div className="border-t border-blue-400 pt-4">
+          <p className="text-xs text-blue-100 mb-3">Alineación por área:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {Object.entries(topMatch.alignmentByArea).map(([area, score]) => (
+              <div key={area} className="flex justify-between items-center text-sm">
+                <span className="text-blue-50">{POLICY_AREA_LABELS[area] || area}</span>
+                <span className="font-semibold tabular-nums">{formatScore(score)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }, [topMatch]);
+
+  const otherMatchesCards = useMemo(() => {
+    return matches.slice(1).map((match, index) => (
+      <div
+        key={match.candidateId}
+        className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors"
+      >
+        <div className="flex items-start gap-4 mb-3">
+          {/* Candidate Photo with Ranking Badge */}
+          <div className="relative flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gray-200">
+              <Image
+                src={getPhotoPath(match.party)}
+                alt={match.name}
+                width={80}
+                height={80}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+            {/* Party Flag Badge */}
+            <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
+              <Image
+                src={getLogoPath(match.party)}
+                alt={match.party}
+                width={24}
+                height={24}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+            {/* Ranking Number */}
+            <div className="absolute -top-1 -left-1 w-7 h-7 flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full text-sm shadow-md">
+              {index + 2}
+            </div>
+          </div>
+
+          {/* Candidate Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900">{match.name}</h3>
+            <p className="text-gray-600 text-sm mb-2">{match.party}</p>
+
+            {/* Progress Bar */}
+            <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
+              <div
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all"
+                style={{ width: `${match.score}%` }}
+              ></div>
+            </div>
+
+            {/* Top Areas */}
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(match.alignmentByArea)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 3)
+                .map(([area, score]) => (
+                  <span
+                    key={area}
+                    className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                  >
+                    {POLICY_AREA_LABELS[area]}: {formatScore(score)}%
+                  </span>
+                ))}
+            </div>
+          </div>
+
+          {/* Score */}
+          <span className="text-xl font-bold text-gray-900 tabular-nums flex-shrink-0">
+            {formatScore(match.score)}%
+          </span>
+        </div>
+      </div>
+    ));
+  }, [matches]);
 
   useEffect(() => {
     async function calculateMatches() {
@@ -171,8 +304,6 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       </div>
     );
   }
-
-  const topMatch = matches[0];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -267,145 +398,11 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         </div>
 
         {/* Top Match */}
-        {topMatch && (
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
-              {/* Candidate Photo with Flag */}
-              <div className="relative flex-shrink-0">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/20">
-                  <Image
-                    src={getPhotoPath(topMatch.party)}
-                    alt={topMatch.name}
-                    width={96}
-                    height={96}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-                {/* Party Flag Badge */}
-                <div className="absolute bottom-0 right-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
-                  <Image
-                    src={getLogoPath(topMatch.party)}
-                    alt={topMatch.party}
-                    width={32}
-                    height={32}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Candidate Info */}
-              <div className="flex-1">
-                <p className="text-blue-100 text-xs uppercase tracking-wide mb-1">
-                  Tu mejor coincidencia
-                </p>
-                <h2 className="text-2xl sm:text-3xl font-bold">{topMatch.name}</h2>
-                <p className="text-blue-100 mt-1 text-sm">{topMatch.party}</p>
-              </div>
-
-              {/* Score */}
-              <div className="text-left sm:text-right">
-                <div className="text-4xl sm:text-5xl font-bold tabular-nums">{formatScore(topMatch.score)}%</div>
-                <p className="text-blue-100 text-xs mt-1">Compatibilidad</p>
-              </div>
-            </div>
-
-            <div className="border-t border-blue-400 pt-4">
-              <p className="text-xs text-blue-100 mb-3">Alineación por área:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {Object.entries(topMatch.alignmentByArea).map(([area, score]) => (
-                  <div key={area} className="flex justify-between items-center text-sm">
-                    <span className="text-blue-50">{POLICY_AREA_LABELS[area] || area}</span>
-                    <span className="font-semibold tabular-nums">{formatScore(score)}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {topMatchCard}
 
         {/* Other Matches */}
         <div className="space-y-3">
-          {matches.slice(1).map((match, index) => (
-            <div
-              key={match.candidateId}
-              className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors"
-            >
-              <div className="flex items-start gap-4 mb-3">
-                {/* Candidate Photo with Ranking Badge */}
-                <div className="relative flex-shrink-0">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gray-200">
-                    <Image
-                      src={getPhotoPath(match.party)}
-                      alt={match.name}
-                      width={80}
-                      height={80}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  {/* Party Flag Badge */}
-                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
-                    <Image
-                      src={getLogoPath(match.party)}
-                      alt={match.party}
-                      width={24}
-                      height={24}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  {/* Ranking Number */}
-                  <div className="absolute -top-1 -left-1 w-7 h-7 flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full text-sm shadow-md">
-                    {index + 2}
-                  </div>
-                </div>
-
-                {/* Candidate Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-gray-900">{match.name}</h3>
-                  <p className="text-gray-600 text-sm mb-2">{match.party}</p>
-
-                  {/* Progress Bar */}
-                  <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
-                    <div
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all"
-                      style={{ width: `${match.score}%` }}
-                    ></div>
-                  </div>
-
-                  {/* Top Areas */}
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(match.alignmentByArea)
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 3)
-                      .map(([area, score]) => (
-                        <span
-                          key={area}
-                          className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full"
-                        >
-                          {POLICY_AREA_LABELS[area]}: {formatScore(score)}%
-                        </span>
-                      ))}
-                  </div>
-                </div>
-
-                {/* Score */}
-                <span className="text-xl font-bold text-gray-900 tabular-nums flex-shrink-0">
-                  {formatScore(match.score)}%
-                </span>
-              </div>
-            </div>
-          ))}
+          {otherMatchesCards}
         </div>
 
         {/* Actions */}
