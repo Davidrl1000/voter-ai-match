@@ -81,12 +81,17 @@ function addSecurityHeaders(response: NextResponse): void {
     'camera=(), microphone=(), geolocation=()'
   );
 
+  const isProd = process.env.NODE_ENV === 'production';
+  let scriptSrc = `'unsafe-eval'`;
+
   // HSTS - Force HTTPS (only in production)
-  if (process.env.NODE_ENV === 'production') {
+  if (isProd) {
     response.headers.set(
       'Strict-Transport-Security',
       'max-age=31536000; includeSubDomains; preload'
     );
+
+    scriptSrc = ``;
   }
 
   // Cross-Origin-Opener-Policy for isolation
@@ -98,7 +103,7 @@ function addSecurityHeaders(response: NextResponse): void {
   // Content Security Policy for XSS protection
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://scripts.clarity.ms",
+    `script-src 'self' 'unsafe-inline' ${scriptSrc} https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://scripts.clarity.ms`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",

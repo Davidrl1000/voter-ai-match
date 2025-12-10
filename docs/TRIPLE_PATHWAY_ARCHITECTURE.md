@@ -82,7 +82,7 @@ Rewards candidates with complete policy coverage:
 const candidatePolicyAreas = candidatePositionsMap.size;
 const totalPolicyAreas = 7; // economy, education, environment, healthcare, infrastructure, security, social
 const coverageRatio = candidatePolicyAreas / totalPolicyAreas;
-const comprehensiveBonus = coverageRatio * 35; // Up to 35 points
+const comprehensiveBonus = coverageRatio * 20; // Up to 20 points
 ```
 
 **Purpose:**
@@ -114,7 +114,7 @@ The system offers three question count options, all achieving 100% coverage:
 - **20 questions** - "Estándar" (~5 min)
 - **30 questions** - "Completo" (~8 min)
 
-All three options use a **35-point comprehensive bonus** (static, no dynamic scaling needed).
+All three options use a **20-point comprehensive bonus** (static, no dynamic scaling needed).
 
 ### Current Status
 
@@ -138,7 +138,7 @@ All three options use a **35-point comprehensive bonus** (static, no dynamic sca
 
 3. **The comprehensive bonus is critical:**
    - Prevents systematic bias against candidates with complete policy coverage
-   - 35 points provides the right balance across all question counts
+   - 20 points provides the right balance across all question counts
 
 ## Performance
 
@@ -192,7 +192,7 @@ Expected output:
 1. **Fairness First**: 100% coverage is an ethical requirement
 2. **Transparency**: All scoring pathways are deterministic and auditable
 3. **Performance**: Fast enough for production (<500ms)
-4. **Simplicity**: Static 35-point bonus works for all question counts
+4. **Simplicity**: Static 20-point bonus works for all question counts
 5. **Testability**: Automated coverage verification
 
 ## References

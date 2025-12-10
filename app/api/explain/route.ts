@@ -15,10 +15,6 @@ interface CandidateMatch {
 export async function POST(request: NextRequest) {
   try {
     // Validate OpenAI API key is configured
-    console.log('API /api/explain called');
-    console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
-    console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
-
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set in environment variables');
       return NextResponse.json(
@@ -104,7 +100,6 @@ export async function POST(request: NextRequest) {
 
     // Check if it's an API key issue
     if (!process.env.OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not set');
       return NextResponse.json(
         { error: 'OpenAI API key not configured' },
         { status: 500 }

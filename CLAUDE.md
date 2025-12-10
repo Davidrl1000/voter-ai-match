@@ -20,10 +20,10 @@ npm run lint && npm run build    # Full validation before commit
 ## Core Architecture
 
 **Stack:**
-- Next.js 16 (App Router, Server Components)
+- Next.js
 - React 19 (with automatic batching)
 - TypeScript (strict mode)
-- Tailwind CSS 4
+- Tailwind CSS
 - DynamoDB (AWS)
 - OpenAI API (GPT-4o-mini for explanations)
 

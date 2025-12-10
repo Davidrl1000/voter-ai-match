@@ -197,54 +197,13 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               }}>
                 <button
                   onClick={reset}
-                  style={{
-                    padding: '0.75rem 2rem',
-                    background: 'linear-gradient(to right, #2563eb, #4f46e5)',
-                    color: 'white',
-                    fontWeight: '600',
-                    borderRadius: '0.75rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    fontSize: '1rem',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #4338ca)';
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #2563eb, #4f46e5)';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
+                  className="btn-primary-error"
                 >
                   Intentar de nuevo
                 </button>
                 <Link
                   href="/"
-                  style={{
-                    padding: '0.75rem 2rem',
-                    background: 'white',
-                    border: '2px solid #d1d5db',
-                    color: '#374151',
-                    fontWeight: '600',
-                    borderRadius: '0.75rem',
-                    textDecoration: 'none',
-                    transition: 'all 0.2s',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1rem',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#f9fafb';
-                    e.currentTarget.style.borderColor = '#9ca3af';
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.borderColor = '#d1d5db';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
+                  className="btn-secondary-error"
                 >
                   Volver al inicio
                 </Link>
