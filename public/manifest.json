@@ -1,0 +1,24 @@
+{
+  "name": "Votante AI - Costa Rica 2026",
+  "short_name": "Votante AI",
+  "description": "Sistema de matching político imparcial powered by AI para las elecciones presidenciales de Costa Rica 2026",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "lang": "es-CR",
+  "dir": "ltr",
+  "categories": ["politics", "education", "government"],
+  "icons": [
+    {
+      "src": "/assets/icons/ai-sparkle.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

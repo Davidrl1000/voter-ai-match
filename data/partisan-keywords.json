@@ -1,0 +1,237 @@
+{
+  "description": "Prohibited partisan keywords and phrases for Costa Rica voter matching system. Questions containing these terms may introduce political bias.",
+  "version": "1.0.0",
+  "lastUpdated": "2025-12-01",
+
+  "categories": {
+    "politicalParties": {
+      "description": "Political party names and abbreviations (Costa Rica 2026)",
+      "keywords": [
+        "ACRM",
+        "Aquí Costa Rica Manda",
+        "CAC",
+        "Coalición Agenda Ciudadana",
+        "CDS",
+        "Centro Democrático y Social",
+        "CR1",
+        "Costa Rica Primero",
+        "FA",
+        "Frente Amplio",
+        "PA",
+        "Partido Avanza",
+        "PDLCT",
+        "Partido de la Clase Trabajadora",
+        "PEL",
+        "Partido Esperanza y Libertad",
+        "PEN",
+        "Partido Esperanza Nacional",
+        "PIN",
+        "Partido Integración Nacional",
+        "PJSC",
+        "Partido Justicia Social Costarricense",
+        "PLN",
+        "Partido Liberación Nacional",
+        "PLP",
+        "Partido Liberal Progresista",
+        "PNG",
+        "Partido Nueva Generación",
+        "PNR",
+        "Partido Nueva República",
+        "PPSO",
+        "Partido Pueblo Soberano",
+        "PPSD",
+        "Partido Progreso Social Democrático",
+        "PUCD",
+        "Partido Unión Costarricense Democrática",
+        "PUSC",
+        "Partido Unidad Social Cristiana",
+        "UP",
+        "Unidos Podemos"
+      ]
+    },
+
+    "politicians": {
+      "description": "2026 presidential candidate names (to avoid personality-based questions)",
+      "keywords": [
+        "Ronny Castillo González",
+        "Ronny Castillo",
+        "Castillo González",
+        "Claudia Dobles Camargo",
+        "Claudia Dobles",
+        "Dobles Camargo",
+        "Ana Virginia Calzada",
+        "Virginia Calzada",
+        "Douglas Caamaño Quirós",
+        "Douglas Caamaño",
+        "Caamaño Quirós",
+        "Ariel Robles Barrantes",
+        "Ariel Robles",
+        "Robles Barrantes",
+        "Jose Aguilar Berrocal",
+        "Jose Aguilar",
+        "Aguilar Berrocal",
+        "David Hernández Brenes",
+        "David Hernández",
+        "Hernández Brenes",
+        "Marco Rodríguez Badilla",
+        "Marco Rodríguez",
+        "Rodríguez Badilla",
+        "Claudio Alpízar Otoya",
+        "Claudio Alpízar",
+        "Alpízar Otoya",
+        "Luis Amador Jiménez",
+        "Luis Amador",
+        "Amador Jiménez",
+        "Walter Rubén Hernández Juárez",
+        "Walter Hernández",
+        "Hernández Juárez",
+        "Álvaro Ramos Chaves",
+        "Álvaro Ramos",
+        "Ramos Chaves",
+        "Eliecer Feinzaig Mintz",
+        "Eliecer Feinzaig",
+        "Feinzaig Mintz",
+        "Fernando Zamora Castellanos",
+        "Fernando Zamora",
+        "Zamora Castellanos",
+        "Fabricio Alvarado Muñoz",
+        "Fabricio Alvarado",
+        "Alvarado Muñoz",
+        "Laura Fernández Delgado",
+        "Laura Fernández",
+        "Fernández Delgado",
+        "Luz Mary Alpízar Loaiza",
+        "Luz Mary Alpízar",
+        "Alpízar Loaiza",
+        "Boris Molina Acevedo",
+        "Boris Molina",
+        "Molina Acevedo",
+        "Juan Carlos Hidalgo Bogantes",
+        "Juan Carlos Hidalgo",
+        "Hidalgo Bogantes",
+        "Natalia Díaz Quintana",
+        "Natalia Díaz",
+        "Díaz Quintana"
+      ]
+    },
+
+    "partisanSlogans": {
+      "description": "2026 campaign slogans and phrases",
+      "keywords": [
+        "Unidos por la libertad, la justicia y la prosperidad para todos",
+        "Desde la Coalición Agenda Ciudadana, impulsamos una Costa Rica segura, equitativa y más sostenible",
+        "Llegó la ley",
+        "La esperanza que necesitás, el cambio que merecés",
+        "Por la Costa Rica que merecemos",
+        "El futuro de Costa Rica, avanza",
+        "Nuestras vidas valen más que sus ganancias",
+        "Con esperanza construiremos nuestra libertad",
+        "El Partido Esperanza Nacional es un movimiento político de personas comprometidas con Costa Rica",
+        "El PIN impulsa una auténtica Democracia Participativa",
+        "Costa Rica somos todos",
+        "Una democracia que resuelve",
+        "Trabajamos por una Costa Rica próspera, libre y segura para todos",
+        "Ideas que crecen, país que avanza",
+        "Una sola Costa Rica",
+        "Valientes Fuertes y Unidos",
+        "Somos Progreso",
+        "Costa Rica merece más",
+        "Juntos somos más fuertes",
+        "El siguiente paso"
+      ]
+    },
+
+    "polarizingTerms": {
+      "description": "Terms that suggest strong ideological positions",
+      "keywords": [
+        "comunista",
+        "socialista radical",
+        "ultraderecha",
+        "extremista",
+        "populista demagogo",
+        "neoliberal extremo",
+        "chavista",
+        "castro-comunismo"
+      ]
+    },
+
+    "regionalBias": {
+      "description": "Terms that favor specific regions over others",
+      "keywords": [
+        "solo San José",
+        "solo GAM",
+        "solo rural",
+        "solo zonas costeras",
+        "abandonar el campo",
+        "centralismo josefino"
+      ]
+    },
+
+    "socioeconomicBias": {
+      "description": "Terms that unfairly target specific economic groups",
+      "keywords": [
+        "ricos avaros",
+        "pobres vagos",
+        "empresarios corruptos",
+        "clase alta privilegiada",
+        "asistencialismo parasitario"
+      ]
+    },
+
+    "leadingLanguage": {
+      "description": "Phrases that lead respondent toward specific answer",
+      "keywords": [
+        "obviamente",
+        "es claro que",
+        "todo el mundo sabe",
+        "como es evidente",
+        "cualquier persona inteligente",
+        "está comprobado que"
+      ]
+    },
+
+    "emotionalManipulation": {
+      "description": "Emotionally charged language designed to manipulate",
+      "keywords": [
+        "catastrófico",
+        "desastroso",
+        "maravilloso",
+        "perfecto",
+        "terrible crisis",
+        "éxito rotundo",
+        "fracaso total"
+      ]
+    }
+  },
+
+  "allowedPolicyTerms": {
+    "description": "These terms are acceptable as they refer to legitimate policy areas without partisan bias",
+    "terms": [
+      "economía",
+      "salud pública",
+      "educación",
+      "seguridad ciudadana",
+      "medio ambiente",
+      "infraestructura",
+      "impuestos",
+      "pensiones",
+      "empleo",
+      "vivienda",
+      "transporte público",
+      "corrupción",
+      "transparencia",
+      "CCSS",
+      "sistema de salud",
+      "reforma fiscal",
+      "inversión pública"
+    ]
+  },
+
+  "contextualGuidelines": {
+    "neutral": "Questions should focus on policy positions, not party affiliation or personalities",
+    "objective": "Use factual, measurable criteria rather than subjective judgments",
+    "balanced": "Present all sides of an issue without favoring one perspective",
+    "clear": "Avoid ambiguous language that could be interpreted multiple ways",
+    "respectful": "Maintain respectful tone toward all political views and candidates"
+  }
+}

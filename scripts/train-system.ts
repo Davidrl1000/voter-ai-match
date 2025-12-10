@@ -5,7 +5,6 @@ import path from 'path';
 import OpenAI from 'openai';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import {
   retryWithBackoff,
@@ -13,13 +12,14 @@ import {
   validateQuestion,
   estimateCost,
   logProgress,
-  chunkText,
-  detectBiasIndicators
+  chunkText
 } from '../lib/training/utils';
+
+import { checkQuestionNeutrality, formatBiasCheckSummary } from '../lib/neutrality/bias-checker';
 
 import {
   POLICY_EXTRACTION_PROMPT,
-  QUESTION_GENERATION_PROMPT,
+  formatReverseQuestionPrompt,
 } from '../lib/training/prompts-es-cr';
 
 import {
@@ -30,6 +30,8 @@ import {
 } from '../lib/training/candidate-mapper';
 
 import { ProgressTracker } from '../lib/training/progress-tracker';
+
+import { extractTextFromPDF } from './utils/pdf-utils';
 
 interface PolicyPosition {
   candidateId: string;
@@ -50,6 +52,44 @@ interface Question {
   biasScore?: number;
 }
 
+interface PositionWithCandidate extends PolicyPosition {
+  candidateName: string;
+}
+
+// =============================================================================
+// SELECTIVE TRAINING CONFIGURATION
+// =============================================================================
+// To train only specific candidates, add their candidateIds to this array.
+// Leave empty [] to train all candidates.
+//
+// Example failed candidates from previous training:
+// const SPECIFIC_CANDIDATES = [
+//   'centro-democratico-y-social',
+//   'frente-amplio',
+//   'partido-liberal-progresista',
+//   'partido-nueva-republica',
+//   'partido-progreso-social-democratico',
+//   'partido-union-costarricense-democratica',
+// ];
+const SPECIFIC_CANDIDATES: string[] = [];
+
+// =============================================================================
+// QUESTION NUMBER OFFSET
+// =============================================================================
+// When running training for additional candidates after an initial training,
+// set this to the highest question number from previous training to prevent
+// question ID collisions and maintain sequential numbering.
+//
+// HOW TO USE:
+// 1. Check your existing questions in DB or backup file
+// 2. Find the highest question number (e.g., q-economy-rev-250-v1 → 250)
+// 3. Set QUESTION_NUMBER_OFFSET to that number
+// 4. New questions will start from 251, 252, etc.
+//
+// Example: If you have questions numbered 001-250, set to 250
+const QUESTION_NUMBER_OFFSET = 0;
+// =============================================================================
+
 const CONFIG = {
   model: {
     extraction: process.env.NODE_ENV === 'production' ? 'o1-pro' : 'gpt-4o-mini',
@@ -61,7 +101,7 @@ const CONFIG = {
   backoffMs: 1000,
   delayBetweenCalls: 1000,
   questionCount: parseInt(process.env.QUESTION_COUNT || '150'),
-  questionsPerPolicyArea: Math.floor(parseInt(process.env.QUESTION_COUNT || '150') / 7),
+  questionsPerPolicyArea: Math.ceil(parseInt(process.env.QUESTION_COUNT || '150') / 7),
   chunkSize: 2000,
   chunkOverlap: 200,
   policyAreas: ['economy', 'healthcare', 'education', 'security', 'environment', 'social', 'infrastructure'],
@@ -84,35 +124,16 @@ const openai = new OpenAI({
 });
 
 const dynamoClient = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  ...(process.env.AWS_ACCESS_KEY_ID && {
+  region: process.env.ARCH_AWS_REGION || 'us-east-1',
+  ...(process.env.ARCH_AWS_ACCESS_KEY_ID && {
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId: process.env.ARCH_AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.ARCH_AWS_SECRET_ACCESS_KEY!,
     },
   }),
 });
 
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
-
-async function extractTextFromPDF(filePath: string): Promise<string> {
-  const dataBuffer = fs.readFileSync(filePath);
-  const uint8Array = new Uint8Array(dataBuffer);
-  const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-  const pdf = await loadingTask.promise;
-
-  let fullText = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items
-      .map(item => ('str' in item ? item.str : ''))
-      .join(' ');
-    fullText += pageText + '\n\n';
-  }
-
-  return fullText;
-}
 
 async function generateEmbedding(text: string): Promise<number[]> {
   return retryWithBackoff(async () => {
@@ -122,6 +143,144 @@ async function generateEmbedding(text: string): Promise<number[]> {
     });
     return response.data[0].embedding;
   }, CONFIG.retries, CONFIG.backoffMs);
+}
+
+// Generate one neutral question from a candidate position (reverse training)
+async function generateReverseQuestion(
+  position: PositionWithCandidate,
+  questionNumber: number,
+  variantNumber: number = 1
+): Promise<Question | null> {
+  const prompt = formatReverseQuestionPrompt(
+    position.candidateName,
+    position.position,
+    position.policyArea,
+    variantNumber
+  );
+
+  try {
+    const response = await retryWithBackoff(async () => {
+      return await openai.chat.completions.create({
+        model: CONFIG.model.questions,
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+      });
+    }, CONFIG.retries, CONFIG.backoffMs);
+
+    const content = response.choices[0].message.content || '{}';
+    const parsed = JSON.parse(content);
+
+    if (!parsed.text || !parsed.type) {
+      console.warn(`  Invalid reverse question generated for ${position.policyArea}`);
+      return null;
+    }
+
+    const questionId = `q-${position.policyArea}-rev-${String(questionNumber + QUESTION_NUMBER_OFFSET).padStart(3, '0')}-v${variantNumber}`;
+    const embedding = await generateEmbedding(parsed.text);
+
+    const question: Question = {
+      questionId,
+      policyArea: position.policyArea,
+      text: parsed.text,
+      type: parsed.type,
+      options: parsed.options || undefined,
+      embedding,
+      weight: 1.0,
+      biasScore: 10,
+    };
+
+    if (validateQuestion(question)) {
+      return question;
+    } else {
+      console.warn(`  Invalid reverse question ${questionId}, skipping`);
+      return null;
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.warn(`  Error generating reverse question for ${position.policyArea}: ${errorMsg}`);
+    return null;
+  }
+}
+
+// Generate reverse questions from all candidate positions
+async function generateReverseQuestionsFromPositions(
+  allPositions: PolicyPosition[],
+  candidates: Candidate[]
+): Promise<Question[]> {
+  logProgress('\n🔄 Generating reverse questions from candidate positions...');
+
+  const candidateMap = new Map(candidates.map(c => [c.candidateId, c.name]));
+
+  const positionsWithNames: PositionWithCandidate[] = allPositions.map(pos => ({
+    ...pos,
+    candidateName: candidateMap.get(pos.candidateId) || 'Unknown',
+  }));
+
+  logProgress(`  Total positions to convert: ${positionsWithNames.length}`);
+  logProgress(`  Generating 3 variants per position for question variety`);
+  logProgress(`  Expected total questions: ${positionsWithNames.length * 3}`);
+
+  if (QUESTION_NUMBER_OFFSET > 0) {
+    logProgress(`  ⚙️  Question numbering offset: ${QUESTION_NUMBER_OFFSET} (questions will start from ${QUESTION_NUMBER_OFFSET + 1})`);
+  }
+
+  const reverseQuestions: Question[] = [];
+  let questionNumber = 1;
+
+  for (let i = 0; i < positionsWithNames.length; i++) {
+    const position = positionsWithNames[i];
+
+    logProgress(`  [${i + 1}/${positionsWithNames.length}] Generating 3 variants for ${position.candidateName} - ${position.policyArea}`);
+
+    // Generate 3 variants of the question for this position
+    for (let variantNum = 1; variantNum <= 3; variantNum++) {
+      let question: Question | null = null;
+      let retries = 0;
+      const maxRetries = 2;
+
+      // Retry loop for bias checking
+      while (retries <= maxRetries && !question) {
+        const candidate = await generateReverseQuestion(position, questionNumber, variantNum);
+
+        if (!candidate) {
+          logProgress(`    ✗ Variant ${variantNum}: Failed to generate (attempt ${retries + 1}/${maxRetries + 1})`);
+          retries++;
+          continue;
+        }
+
+        // Check for bias
+        const biasCheck = await checkQuestionNeutrality([candidate]);
+
+        if (biasCheck.issues.length === 0) {
+          // No bias - accept this question
+          question = candidate;
+          reverseQuestions.push(question);
+          logProgress(`    ✓ Variant ${variantNum}: "${question.text.substring(0, 70)}..." (score: ${biasCheck.score}/100)`);
+        } else {
+          // Bias detected - log and retry
+          const issue = biasCheck.issues[0];
+          logProgress(`    ⚠️  Variant ${variantNum}: Bias detected [${issue.category}] - ${issue.matchedKeywords.join(', ')} (attempt ${retries + 1}/${maxRetries + 1})`);
+
+          if (retries < maxRetries) {
+            logProgress(`    🔄 Retrying variant ${variantNum}...`);
+            retries++;
+          } else {
+            logProgress(`    ✗ Variant ${variantNum}: Skipped after ${maxRetries + 1} attempts with bias`);
+            retries++;
+          }
+        }
+
+        // Small delay to avoid overwhelming API
+        await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenCalls));
+      }
+    }
+
+    questionNumber++; // Increment position number after all variants
+  }
+
+  logProgress(`\n✓ Generated ${reverseQuestions.length}/${positionsWithNames.length * 3} reverse questions (3 variants per position)`);
+
+  return reverseQuestions;
 }
 
 async function extractPolicyPositions(
@@ -134,7 +293,9 @@ async function extractPolicyPositions(
   const chunks = chunkText(text, CONFIG.chunkSize, CONFIG.chunkOverlap);
   logProgress(`  Created ${chunks.length} chunks`);
 
-  const allPositions: PolicyPosition[] = [];
+  // Use Map to deduplicate positions by policyArea
+  // Key: policyArea, Value: accumulated position text fragments
+  const positionMap = new Map<string, string[]>();
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
@@ -161,30 +322,31 @@ async function extractPolicyPositions(
         continue;
       }
 
+      // Accumulate positions from this chunk
       for (const policyArea of CONFIG.policyAreas) {
         const position = extractedPositions[policyArea];
 
-        if (!position || position.includes('No se menciona')) {
+        // Type check: ensure position is a string
+        if (!position || typeof position !== 'string') {
           continue;
         }
 
-        const embeddingText = `${policyArea}: ${position}`;
-        const embedding = await generateEmbedding(embeddingText);
-
-        const policyPosition: PolicyPosition = {
-          candidateId: candidate.candidateId,
-          policyArea,
-          position,
-          embedding,
-          extractedAt: new Date().toISOString(),
-        };
-
-        if (validatePolicyPosition(policyPosition)) {
-          allPositions.push(policyPosition);
-          progressTracker.completePolicyArea(candidate.candidateId, policyArea);
-        } else {
-          console.warn(`    Invalid policy position for ${policyArea}, skipping`);
+        // Skip if it's a "not mentioned" response
+        if (position.includes('No se menciona')) {
+          continue;
         }
+
+        // Skip if position is too short to be meaningful
+        if (position.trim().length < 20) {
+          continue;
+        }
+
+        // Add this position fragment to the map
+        if (!positionMap.has(policyArea)) {
+          positionMap.set(policyArea, []);
+        }
+        positionMap.get(policyArea)!.push(position);
+        logProgress(`    Found position fragment for ${policyArea}`);
       }
 
       const tokens = response.usage?.total_tokens || 0;
@@ -205,103 +367,96 @@ async function extractPolicyPositions(
     }
   }
 
-  logProgress(`  Total positions extracted: ${allPositions.length}`);
+  // Now create final deduplicated positions by merging fragments
+  logProgress(`  Merging position fragments across ${chunks.length} chunks...`);
+  const allPositions: PolicyPosition[] = [];
+
+  for (const [policyArea, fragments] of positionMap.entries()) {
+    logProgress(`  Merging ${fragments.length} fragments for ${policyArea}...`);
+
+    // Merge fragments: join with separator, then deduplicate similar sentences
+    const mergedPosition = deduplicateAndMerge(fragments);
+
+    const embeddingText = `${policyArea}: ${mergedPosition}`;
+    const embedding = await generateEmbedding(embeddingText);
+
+    const policyPosition: PolicyPosition = {
+      candidateId: candidate.candidateId,
+      policyArea,
+      position: mergedPosition,
+      embedding,
+      extractedAt: new Date().toISOString(),
+    };
+
+    if (validatePolicyPosition(policyPosition)) {
+      allPositions.push(policyPosition);
+      progressTracker.completePolicyArea(candidate.candidateId, policyArea);
+    } else {
+      console.warn(`    Invalid merged policy position for ${policyArea}, skipping`);
+    }
+  }
+
+  logProgress(`  ✓ Final deduplicated positions: ${allPositions.length} (merged from ${chunks.length} chunks)`);
   return allPositions;
 }
 
-async function generateQuestionsForArea(
-  policyArea: string,
-  questionCount: number,
-  progressTracker: ProgressTracker
-): Promise<Question[]> {
-  logProgress(`Generating ${questionCount} questions for ${policyArea}`);
+// Deduplicate and merge position fragments from multiple chunks
+function deduplicateAndMerge(fragments: string[]): string {
+  if (fragments.length === 0) return '';
 
-  const prompt = QUESTION_GENERATION_PROMPT
-    .replace(/{policyArea}/g, policyArea)
-    .replace(/{questionCount}/g, String(questionCount));
+  // Filter out any non-string values and validate
+  const validFragments = fragments.filter(f => typeof f === 'string' && f.trim().length > 0);
 
-  try {
-    const response = await retryWithBackoff(async () => {
-      return await openai.chat.completions.create({
-        model: CONFIG.model.questions,
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      });
-    }, CONFIG.retries, CONFIG.backoffMs);
+  if (validFragments.length === 0) return '';
+  if (validFragments.length === 1) return validFragments[0];
 
-    const content = response.choices[0].message.content || '{"questions":[]}';
-    const parsed = JSON.parse(content);
-    const rawQuestions = parsed.questions || [];
+  // Split into sentences and deduplicate
+  const seenSentences = new Set<string>();
+  const uniqueSentences: string[] = [];
 
-    const questions: Question[] = [];
+  for (const fragment of validFragments) {
+    try {
+      // Split by sentence boundaries (. ! ?)
+      const sentences = fragment.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
 
-    for (let i = 0; i < rawQuestions.length; i++) {
-      const q = rawQuestions[i];
-      const questionId = `q-${policyArea}-${String(i + 1).padStart(3, '0')}`;
-      const embedding = await generateEmbedding(q.text);
+      for (const sentence of sentences) {
+        // Normalize for comparison (lowercase, remove extra whitespace)
+        const normalized = sentence.toLowerCase().replace(/\s+/g, ' ').trim();
 
-      const biasIndicators = detectBiasIndicators(q.text);
-      if (biasIndicators.length > 0) {
-        console.warn(`    Bias indicators in question ${questionId}:`, biasIndicators);
+        if (!seenSentences.has(normalized) && sentence.length > 10) {
+          seenSentences.add(normalized);
+          uniqueSentences.push(sentence);
+        }
       }
-
-      const question: Question = {
-        questionId,
-        policyArea,
-        text: q.text,
-        type: q.type || q.format,
-        options: q.options,
-        embedding,
-        weight: 1.0,
-        biasScore: biasIndicators.length > 0 ? 10 - biasIndicators.length : 10,
-      };
-
-      if (validateQuestion(question)) {
-        questions.push(question);
-      } else {
-        console.warn(`    Invalid question ${questionId}, skipping`);
-      }
+    } catch (error) {
+      // Skip fragments that can't be processed
+      console.warn(`    Warning: Could not process fragment, skipping: ${error}`);
+      continue;
     }
-
-    progressTracker.updateQuestionGeneration(policyArea, questions.length, questions.length);
-
-    const tokens = response.usage?.total_tokens || 0;
-    const cost = estimateCost(CONFIG.model.questions, tokens);
-    progressTracker.addCost(CONFIG.model.questions, cost);
-
-    logProgress(`  ✓ Generated ${questions.length} questions for ${policyArea}`);
-    await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenCalls));
-
-    return questions;
-
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(`  ✗ Error generating questions for ${policyArea}: ${errorMsg}`);
-    progressTracker.addError({
-      policyArea,
-      error: `Question generation failed: ${errorMsg}`,
-      timestamp: new Date(),
-    });
-    return [];
   }
+
+  // Rejoin sentences
+  if (uniqueSentences.length === 0) return '';
+  return uniqueSentences.join('. ') + '.';
 }
 
-async function generateAllQuestions(progressTracker: ProgressTracker): Promise<Question[]> {
-  logProgress('\n📝 Generating question bank');
+async function runFinalNeutralityCheck(allQuestions: Question[]): Promise<void> {
+  if (allQuestions.length === 0) return;
 
-  const allQuestions: Question[] = [];
+  logProgress('\n🔍 Running final neutrality check on all questions...');
+  const finalCheck = await checkQuestionNeutrality(allQuestions);
+  console.log(formatBiasCheckSummary(finalCheck));
 
-  for (const policyArea of CONFIG.policyAreas) {
-    const questions = await generateQuestionsForArea(
-      policyArea,
-      CONFIG.questionsPerPolicyArea,
-      progressTracker
+  if (!finalCheck.passed) {
+    throw new Error(
+      `❌ Final neutrality check FAILED\n` +
+      `Score: ${finalCheck.score}/100\n` +
+      `Flagged: ${finalCheck.summary.flaggedQuestions}/${finalCheck.summary.totalQuestions} questions\n` +
+      `This should not happen after per-area checks. Please review the bias checker configuration.`
     );
-    allQuestions.push(...questions);
   }
 
-  logProgress(`\n✓ Total questions generated: ${allQuestions.length}`);
-  return allQuestions;
+  logProgress(`✓ All questions passed final neutrality check (score: ${finalCheck.score}/100)`);
 }
 
 async function storeCandidatePositions(
@@ -330,6 +485,27 @@ async function storeCandidatePositions(
   }
 
   logProgress(`✓ Stored ${policyPositions.length} positions for ${candidate.name} in DynamoDB`);
+}
+
+// Load comprehensive questions from JSON file (guarantee 100% candidate coverage)
+function loadComprehensiveQuestions(): Question[] {
+  const comprehensivePath = path.join(process.cwd(), 'data', 'comprehensive-questions.json');
+
+  if (!fs.existsSync(comprehensivePath)) {
+    logProgress('⚠️  Comprehensive questions file not found, skipping');
+    return [];
+  }
+
+  try {
+    const data = JSON.parse(fs.readFileSync(comprehensivePath, 'utf-8'));
+    const questions: Question[] = data.questions || [];
+
+    logProgress(`✓ Loaded ${questions.length} comprehensive questions from file`);
+    return questions;
+  } catch (error) {
+    console.warn('⚠️  Failed to load comprehensive questions:', error);
+    return [];
+  }
 }
 
 async function storeQuestionBank(questions: Question[]): Promise<void> {
@@ -370,11 +546,37 @@ async function trainSystem(): Promise<void> {
   console.log('🚀 Starting system training...\n');
   console.log(`🌍 Language: Spanish (Costa Rica)`);
   console.log(`🤖 Model: ${CONFIG.model.extraction} (extraction), ${CONFIG.model.questions} (questions)`);
-  console.log(`📊 Mode: ${CONFIG.dryRun ? 'DRY RUN (3 candidates)' : 'PRODUCTION (all candidates)'}\n`);
+  console.log(`📊 Mode: ${CONFIG.dryRun ? 'TRAINING' : 'PRODUCTION'}\n`);
 
   const startTime = Date.now();
 
-  const candidates = CONFIG.dryRun ? loadCandidatesForTesting(1) : loadCandidates();
+  // Load all candidates
+  let candidates = CONFIG.dryRun ? loadCandidatesForTesting() : loadCandidates();
+
+  // Filter candidates based on SPECIFIC_CANDIDATES array
+  if (SPECIFIC_CANDIDATES && SPECIFIC_CANDIDATES.length > 0) {
+    const originalCount = candidates.length;
+    candidates = candidates.filter(c => SPECIFIC_CANDIDATES.includes(c.candidateId));
+
+    console.log(`\n🎯 Selective Training Mode: Processing ${candidates.length}/${originalCount} specific candidates:`);
+    candidates.forEach(c => console.log(`   ✓ ${c.name} (${c.candidateId})`));
+
+    // Show which candidates from SPECIFIC_CANDIDATES were not found
+    const foundIds = new Set(candidates.map(c => c.candidateId));
+    const notFound = SPECIFIC_CANDIDATES.filter(id => !foundIds.has(id));
+    if (notFound.length > 0) {
+      console.log(`\n   ⚠️  Not found in candidates.json:`);
+      notFound.forEach(id => console.log(`   - ${id}`));
+    }
+
+    console.log();
+
+    if (candidates.length === 0) {
+      throw new Error('No matching candidates found for the IDs in SPECIFIC_CANDIDATES array');
+    }
+  } else {
+    console.log(`\n📋 Full Training Mode: Processing all ${candidates.length} candidates\n`);
+  }
 
   const validation = validateAllCandidates(candidates);
   if (!validation.valid) {
@@ -396,6 +598,9 @@ async function trainSystem(): Promise<void> {
 
   logProgress(`\n📋 Processing ${candidates.length} candidates`);
 
+  // Collect all positions from all candidates
+  const allPositions: PolicyPosition[] = [];
+
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
     logProgress(`\n[${i + 1}/${candidates.length}] Processing ${candidate.name}`);
@@ -404,13 +609,14 @@ async function trainSystem(): Promise<void> {
 
     try {
       logProgress(`  📄 Extracting text from PDF`);
-      const text = await extractTextFromPDF(candidate.pdfPath);
+      const { text } = await extractTextFromPDF(candidate.pdfPath);
       logProgress(`  ✓ Extracted ${text.length} characters`);
 
       const positions = await extractPolicyPositions(candidate, text, progressTracker);
 
       if (positions.length > 0) {
         await storeCandidatePositions(candidate, positions);
+        allPositions.push(...positions); // Collect positions for reverse training
         progressTracker.completeCandidate(candidate.candidateId);
       } else {
         throw new Error('No policy positions extracted');
@@ -425,10 +631,41 @@ async function trainSystem(): Promise<void> {
     progressTracker.printSummary();
   }
 
-  const questions = await generateAllQuestions(progressTracker);
+  logProgress(`\n✓ Total positions collected: ${allPositions.length}`);
 
-  if (questions.length > 0) {
-    await storeQuestionBank(questions);
+  // Generate questions using BOTH reverse training AND independent generation
+  logProgress('\n' + '='.repeat(60));
+  logProgress('📝 QUESTION GENERATION PHASE');
+  logProgress('='.repeat(60));
+
+  // Generate reverse questions from positions (one question per candidate position)
+  // This approach guarantees 100% candidate coverage since every position has a matching question
+  const allQuestions = await generateReverseQuestionsFromPositions(
+    allPositions,
+    candidates
+  );
+
+  logProgress(`\n✓ Total question bank: ${allQuestions.length} questions (reverse training)`);
+
+  // Load and merge comprehensive questions (guarantee 100% candidate coverage)
+  logProgress('\n📦 Loading comprehensive questions...');
+  const comprehensiveQuestions = loadComprehensiveQuestions();
+
+  if (comprehensiveQuestions.length > 0) {
+    const existingIds = new Set(allQuestions.map(q => q.questionId));
+    const newComprehensive = comprehensiveQuestions.filter(q => !existingIds.has(q.questionId));
+    allQuestions.push(...newComprehensive);
+    logProgress(`✓ Added ${newComprehensive.length} comprehensive questions`);
+    logProgress(`  Total questions: ${allQuestions.length}`);
+  } else {
+    logProgress('⚠️  No comprehensive questions loaded - coverage may be reduced');
+  }
+
+  await runFinalNeutralityCheck(allQuestions);
+
+  // Store questions
+  if (allQuestions.length > 0) {
+    await storeQuestionBank(allQuestions);
   } else {
     throw new Error('No questions generated');
   }
@@ -441,7 +678,7 @@ async function trainSystem(): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupPath = path.join(backupDir, `question-bank-${timestamp}.json`);
 
-  fs.writeFileSync(backupPath, JSON.stringify(questions, null, 2), 'utf-8');
+  fs.writeFileSync(backupPath, JSON.stringify(allQuestions, null, 2), 'utf-8');
   logProgress(`\n✓ Backup saved to ${backupPath}`);
 
   progressTracker.complete();
@@ -455,10 +692,12 @@ async function trainSystem(): Promise<void> {
   console.log('='.repeat(60));
   console.log(`\n⏱️  Duration: ${duration} minutes`);
   console.log(`\n✅ Results:`);
-  console.log(`   Candidates processed: ${progressTracker.getProgress().candidates.processed}`);
-  console.log(`   Candidates failed:    ${progressTracker.getProgress().candidates.failed}`);
-  console.log(`   Questions generated:  ${questions.length}`);
-  console.log(`   Estimated cost:       $${progressTracker.getProgress().costs.totalEstimated.toFixed(4)}`);
+  console.log(`   Candidates processed:     ${progressTracker.getProgress().candidates.processed}`);
+  console.log(`   Candidates failed:        ${progressTracker.getProgress().candidates.failed}`);
+  console.log(`   Positions extracted:      ${allPositions.length}`);
+  console.log(`   Questions generated:      ${allQuestions.length} (reverse + comprehensive)`);
+  console.log(`   Comprehensive questions:  ${comprehensiveQuestions.length} (for 100% coverage)`);
+  console.log(`   Estimated cost:           $${progressTracker.getProgress().costs.totalEstimated.toFixed(4)}`);
   console.log('\n' + '='.repeat(60) + '\n');
 }
 

@@ -42,5 +42,8 @@ next-env.d.ts
 
 # custom rules
 /.claude
-.training-progress.json
+.training-progress*
 /data/training-backups
+/test-results
+/playwright-report
+questions

@@ -212,11 +212,21 @@ export function logProgress(message: string, data?: unknown): void {
  * Calculate cosine similarity between two vectors
  * @param vec1 - First vector
  * @param vec2 - Second vector
- * @returns Cosine similarity score (0-1)
+ * @returns Cosine similarity score (0-1), or 0 for invalid vectors
+ *
+ * SECURITY: Handles NaN/Infinity values safely to prevent algorithm manipulation
  */
 export function cosineSimilarity(vec1: number[], vec2: number[]): number {
   if (vec1.length !== vec2.length) {
     throw new Error('Vectors must have the same length');
+  }
+
+  // SECURITY: Check for NaN/Infinity in embeddings (could be malicious or corrupted data)
+  const hasInvalidValues = (vec: number[]) => vec.some(v => !Number.isFinite(v));
+
+  if (hasInvalidValues(vec1) || hasInvalidValues(vec2)) {
+    console.warn('Invalid embedding values detected (NaN/Infinity). Returning neutral similarity 0.');
+    return 0; // Return neutral similarity for invalid embeddings
   }
 
   let dotProduct = 0;
@@ -231,9 +241,20 @@ export function cosineSimilarity(vec1: number[], vec2: number[]): number {
 
   const magnitude = Math.sqrt(norm1) * Math.sqrt(norm2);
 
-  if (magnitude === 0) return 0;
+  // Handle zero magnitude (shouldn't happen with valid embeddings, but be safe)
+  if (magnitude === 0 || !Number.isFinite(magnitude)) {
+    return 0;
+  }
 
-  return dotProduct / magnitude;
+  const similarity = dotProduct / magnitude;
+
+  // SECURITY: Final check - ensure result is valid
+  if (!Number.isFinite(similarity)) {
+    console.warn('Cosine similarity calculation produced invalid result. Returning 0.');
+    return 0;
+  }
+
+  return similarity;
 }
 
 /**

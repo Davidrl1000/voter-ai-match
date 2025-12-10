@@ -1,0 +1,44 @@
+# Votante AI - Costa Rica 2026
+# Robots.txt for search engine optimization
+
+# Allow all major search engines
+User-agent: *
+Allow: /
+Allow: /candidates
+Allow: /notes
+
+# Disallow API routes and dynamic endpoints
+Disallow: /api/
+Disallow: /_next/
+Disallow: /404
+Disallow: /500
+
+# Crawl delay for respectful crawling (1 second)
+Crawl-delay: 1
+
+# Sitemap locations
+Sitemap: https://votante-ai.com/sitemap.xml
+
+# Specific rules for Google
+User-agent: Googlebot
+Allow: /
+Allow: /candidates
+Allow: /notes
+Disallow: /api/
+
+# Specific rules for Bing
+User-agent: Bingbot
+Allow: /
+Allow: /candidates
+Allow: /notes
+Disallow: /api/
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
