@@ -114,7 +114,7 @@ scripts/
 
 ### Question Selection: Static (NOT Adaptive)
 **IMPORTANT:** The system uses **static question selection**, not adaptive:
-- User selects question count: **15, 20, or 30 questions**
+- User selects question count: **15, 20, or 25 questions**
 - All questions loaded at once via `/api/questions`
 - Questions shown sequentially (no dynamic selection)
 - **Why:** Better UX, simpler code, proven accuracy
@@ -141,7 +141,7 @@ scripts/
 
 **Coverage Verification:**
 ```bash
-npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage for 15, 20, 30 questions
+npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage for 15, 20, 25 questions
 ```
 
 ### Streaming
@@ -214,7 +214,7 @@ npm run build            # Must succeed
 **Coverage Verification:**
 ```bash
 npx tsx scripts/audit-coverage.ts  # Verify 100% candidate coverage
-# Expected: All three question counts (15, 20, 30) achieve 100% coverage
+# Expected: All three question counts (15, 20, 25) achieve 100% coverage
 # This is an ETHICAL REQUIREMENT - all candidates must have fair chance to rank #1
 ```
 

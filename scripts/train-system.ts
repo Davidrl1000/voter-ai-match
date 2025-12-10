@@ -56,6 +56,40 @@ interface PositionWithCandidate extends PolicyPosition {
   candidateName: string;
 }
 
+// =============================================================================
+// SELECTIVE TRAINING CONFIGURATION
+// =============================================================================
+// To train only specific candidates, add their candidateIds to this array.
+// Leave empty [] to train all candidates.
+//
+// Example failed candidates from previous training:
+// const SPECIFIC_CANDIDATES = [
+//   'centro-democratico-y-social',
+//   'frente-amplio',
+//   'partido-liberal-progresista',
+//   'partido-nueva-republica',
+//   'partido-progreso-social-democratico',
+//   'partido-union-costarricense-democratica',
+// ];
+const SPECIFIC_CANDIDATES: string[] = [];
+
+// =============================================================================
+// QUESTION NUMBER OFFSET
+// =============================================================================
+// When running training for additional candidates after an initial training,
+// set this to the highest question number from previous training to prevent
+// question ID collisions and maintain sequential numbering.
+//
+// HOW TO USE:
+// 1. Check your existing questions in DB or backup file
+// 2. Find the highest question number (e.g., q-economy-rev-250-v1 → 250)
+// 3. Set QUESTION_NUMBER_OFFSET to that number
+// 4. New questions will start from 251, 252, etc.
+//
+// Example: If you have questions numbered 001-250, set to 250
+const QUESTION_NUMBER_OFFSET = 0;
+// =============================================================================
+
 const CONFIG = {
   model: {
     extraction: process.env.NODE_ENV === 'production' ? 'o1-pro' : 'gpt-4o-mini',
@@ -141,7 +175,7 @@ async function generateReverseQuestion(
       return null;
     }
 
-    const questionId = `q-${position.policyArea}-rev-${String(questionNumber).padStart(3, '0')}-v${variantNumber}`;
+    const questionId = `q-${position.policyArea}-rev-${String(questionNumber + QUESTION_NUMBER_OFFSET).padStart(3, '0')}-v${variantNumber}`;
     const embedding = await generateEmbedding(parsed.text);
 
     const question: Question = {
@@ -185,6 +219,10 @@ async function generateReverseQuestionsFromPositions(
   logProgress(`  Total positions to convert: ${positionsWithNames.length}`);
   logProgress(`  Generating 3 variants per position for question variety`);
   logProgress(`  Expected total questions: ${positionsWithNames.length * 3}`);
+
+  if (QUESTION_NUMBER_OFFSET > 0) {
+    logProgress(`  ⚙️  Question numbering offset: ${QUESTION_NUMBER_OFFSET} (questions will start from ${QUESTION_NUMBER_OFFSET + 1})`);
+  }
 
   const reverseQuestions: Question[] = [];
   let questionNumber = 1;
@@ -288,7 +326,18 @@ async function extractPolicyPositions(
       for (const policyArea of CONFIG.policyAreas) {
         const position = extractedPositions[policyArea];
 
-        if (!position || position.includes('No se menciona')) {
+        // Type check: ensure position is a string
+        if (!position || typeof position !== 'string') {
+          continue;
+        }
+
+        // Skip if it's a "not mentioned" response
+        if (position.includes('No se menciona')) {
+          continue;
+        }
+
+        // Skip if position is too short to be meaningful
+        if (position.trim().length < 20) {
           continue;
         }
 
@@ -354,28 +403,40 @@ async function extractPolicyPositions(
 // Deduplicate and merge position fragments from multiple chunks
 function deduplicateAndMerge(fragments: string[]): string {
   if (fragments.length === 0) return '';
-  if (fragments.length === 1) return fragments[0];
+
+  // Filter out any non-string values and validate
+  const validFragments = fragments.filter(f => typeof f === 'string' && f.trim().length > 0);
+
+  if (validFragments.length === 0) return '';
+  if (validFragments.length === 1) return validFragments[0];
 
   // Split into sentences and deduplicate
   const seenSentences = new Set<string>();
   const uniqueSentences: string[] = [];
 
-  for (const fragment of fragments) {
-    // Split by sentence boundaries (. ! ?)
-    const sentences = fragment.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+  for (const fragment of validFragments) {
+    try {
+      // Split by sentence boundaries (. ! ?)
+      const sentences = fragment.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
 
-    for (const sentence of sentences) {
-      // Normalize for comparison (lowercase, remove extra whitespace)
-      const normalized = sentence.toLowerCase().replace(/\s+/g, ' ').trim();
+      for (const sentence of sentences) {
+        // Normalize for comparison (lowercase, remove extra whitespace)
+        const normalized = sentence.toLowerCase().replace(/\s+/g, ' ').trim();
 
-      if (!seenSentences.has(normalized) && sentence.length > 10) {
-        seenSentences.add(normalized);
-        uniqueSentences.push(sentence);
+        if (!seenSentences.has(normalized) && sentence.length > 10) {
+          seenSentences.add(normalized);
+          uniqueSentences.push(sentence);
+        }
       }
+    } catch (error) {
+      // Skip fragments that can't be processed
+      console.warn(`    Warning: Could not process fragment, skipping: ${error}`);
+      continue;
     }
   }
 
   // Rejoin sentences
+  if (uniqueSentences.length === 0) return '';
   return uniqueSentences.join('. ') + '.';
 }
 
@@ -489,7 +550,33 @@ async function trainSystem(): Promise<void> {
 
   const startTime = Date.now();
 
-  const candidates = CONFIG.dryRun ? loadCandidatesForTesting() : loadCandidates();
+  // Load all candidates
+  let candidates = CONFIG.dryRun ? loadCandidatesForTesting() : loadCandidates();
+
+  // Filter candidates based on SPECIFIC_CANDIDATES array
+  if (SPECIFIC_CANDIDATES && SPECIFIC_CANDIDATES.length > 0) {
+    const originalCount = candidates.length;
+    candidates = candidates.filter(c => SPECIFIC_CANDIDATES.includes(c.candidateId));
+
+    console.log(`\n🎯 Selective Training Mode: Processing ${candidates.length}/${originalCount} specific candidates:`);
+    candidates.forEach(c => console.log(`   ✓ ${c.name} (${c.candidateId})`));
+
+    // Show which candidates from SPECIFIC_CANDIDATES were not found
+    const foundIds = new Set(candidates.map(c => c.candidateId));
+    const notFound = SPECIFIC_CANDIDATES.filter(id => !foundIds.has(id));
+    if (notFound.length > 0) {
+      console.log(`\n   ⚠️  Not found in candidates.json:`);
+      notFound.forEach(id => console.log(`   - ${id}`));
+    }
+
+    console.log();
+
+    if (candidates.length === 0) {
+      throw new Error('No matching candidates found for the IDs in SPECIFIC_CANDIDATES array');
+    }
+  } else {
+    console.log(`\n📋 Full Training Mode: Processing all ${candidates.length} candidates\n`);
+  }
 
   const validation = validateAllCandidates(candidates);
   if (!validation.valid) {

@@ -205,6 +205,13 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
             {currentQuestion.text}
           </h2>
 
+          {/* Linking text for specific-choice questions */}
+          {currentQuestion.type === 'specific-choice' && (
+            <p className="text-sm text-gray-600 mb-4 font-medium">
+              De las siguientes alternativas, seleccione la que mejor refleje su posición o área de interés:
+            </p>
+          )}
+
           {/* Answer Options */}
           <fieldset className="mb-6">
             <legend className="sr-only">Seleccione su respuesta</legend>
