@@ -21,7 +21,7 @@ interface MatchResult {
 }
 
 const MAX_TESTS = 1000;
-const QUESTION_COUNTS = [15, 20, 25];
+const QUESTION_COUNTS = [10, 15, 20];
 
 let cachedPositions: CandidatePosition[] | null = null;
 const cachedQuestions: Map<number, Question[]> = new Map();
