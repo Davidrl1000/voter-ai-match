@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
-import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
+import { getPhotoPath } from '@/lib/candidate-assets';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -118,7 +118,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     return (
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
-          {/* Candidate Photo with Flag */}
+          {/* Candidate Photo */}
           <div className="relative flex-shrink-0">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/20">
               <Image
@@ -126,19 +126,6 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                 alt={topMatch.name}
                 width={96}
                 height={96}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-            {/* Party Flag Badge */}
-            <div className="absolute bottom-0 right-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
-              <Image
-                src={getLogoPath(topMatch.party)}
-                alt={topMatch.party}
-                width={32}
-                height={32}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -193,19 +180,6 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                 alt={match.name}
                 width={80}
                 height={80}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-            {/* Party Flag Badge */}
-            <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full overflow-hidden border-2 border-white bg-white shadow-md">
-              <Image
-                src={getLogoPath(match.party)}
-                alt={match.party}
-                width={24}
-                height={24}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';

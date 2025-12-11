@@ -15,11 +15,11 @@ interface QuizProps {
 }
 
 const agreementOptions = [
-  { value: 1, label: 'Muy en desacuerdo' },
-  { value: 2, label: 'En desacuerdo' },
-  { value: 3, label: 'Neutral' },
-  { value: 4, label: 'De acuerdo' },
-  { value: 5, label: 'Muy de acuerdo' },
+  { value: 1, label: 'Muy en desacuerdo', iconPath: '/assets/icons/agreement-1.svg' },
+  { value: 2, label: 'En desacuerdo', iconPath: '/assets/icons/agreement-2.svg' },
+  { value: 3, label: 'Neutral', iconPath: '/assets/icons/agreement-3.svg' },
+  { value: 4, label: 'De acuerdo', iconPath: '/assets/icons/agreement-4.svg' },
+  { value: 5, label: 'Muy de acuerdo', iconPath: '/assets/icons/agreement-5.svg' },
 ];
 
 export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: QuizProps) {
@@ -230,7 +230,20 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
-                    <span className="font-medium text-gray-900">{option.label}</span>
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-6 h-5 ${
+                        selectedAnswer === option.value ? 'text-blue-600' : 'text-gray-400'
+                      }`}>
+                        <Image
+                          src={option.iconPath}
+                          alt=""
+                          width={24}
+                          height={20}
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <span className="font-medium text-gray-900">{option.label}</span>
+                    </div>
                   </button>
                 ))
               ) : (

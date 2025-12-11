@@ -51,8 +51,8 @@ export const AGREEMENT_SCALE = {
  */
 export const API_LIMITS = {
   QUESTIONS: {
-    ALLOWED_COUNTS: [15, 20, 25] as const,  // Fixed options for question counts
-    DEFAULT: 20,  // Standard option
+    ALLOWED_COUNTS: [10, 15, 20] as const,  // Fixed options for question counts
+    DEFAULT: 15,  // Standard option
   },
   ANSWERS: {
     MAX: 420,  // Match questions max
@@ -66,9 +66,9 @@ export const API_LIMITS = {
  * Question count options with labels and time estimates
  */
 export const QUESTION_OPTIONS = [
-  { count: 15, label: 'Rápido', description: '~3 min', icon: 'zap' },
-  { count: 20, label: 'Estándar', description: '~5 min', icon: 'check-circle' },
-  { count: 25, label: 'Completo', description: '~6 min', icon: 'target' },
+  { count: 10, label: 'Rápido', description: '~3 min', icon: 'zap' },
+  { count: 15, label: 'Estándar', description: '~5 min', icon: 'check-circle' },
+  { count: 20, label: 'Completo', description: '~6 min', icon: 'target' },
 ] as const;
 
 /**
