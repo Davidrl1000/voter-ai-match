@@ -184,22 +184,13 @@ export default function Home() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4 text-center hover:border-gray-300 transition-colors">
-            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 tabular-nums">
-              {questionLimit}
-            </div>
-            <div className="text-xs text-gray-600">
-              Preguntas
-            </div>
-          </div>
-
+        <div className="flex justify-center mb-6">
           <button
             onClick={() => {
               setShowAreasModal(true);
               trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
             }}
-            className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95"
+            className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95 w-64"
           >
             <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1 tabular-nums">
               {POLICY_AREAS.length}
@@ -217,15 +208,6 @@ export default function Home() {
               </div>
             </div>
           </button>
-
-          <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4 text-center hover:border-gray-300 transition-colors">
-            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 tabular-nums">
-              ~{Math.ceil(questionLimit / 4)}
-            </div>
-            <div className="text-xs text-gray-600">
-              Min
-            </div>
-          </div>
         </div>
 
         {/* Privacy Note */}
