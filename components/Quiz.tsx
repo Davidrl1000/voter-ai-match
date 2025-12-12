@@ -123,6 +123,10 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
     }
   }, [currentIndex, answers]);
 
+  const handleSelectAnswer = useCallback((value: number | string) => {
+    setSelectedAnswer(value);
+  }, []);
+
   if (loading) {
     return <LoadingSpinner message="Cargando preguntas..." />;
   }
@@ -220,7 +224,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                 agreementOptions.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setSelectedAnswer(option.value)}
+                    onClick={() => handleSelectAnswer(option.value)}
                     role="radio"
                     aria-checked={selectedAnswer === option.value}
                     aria-label={option.label}
@@ -250,7 +254,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                 currentQuestion.options?.map((option, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedAnswer(option)}
+                    onClick={() => handleSelectAnswer(option)}
                     role="radio"
                     aria-checked={selectedAnswer === option}
                     aria-label={option}

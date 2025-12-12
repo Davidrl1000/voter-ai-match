@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Header from '@/components/Header';
@@ -30,7 +30,7 @@ export default function Home() {
   const [showAreasModal, setShowAreasModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  const handleStart = async () => {
+  const handleStart = useCallback(async () => {
     setIsLoadingQuestions(true);
 
     // Track quiz start
@@ -54,17 +54,45 @@ export default function Home() {
       console.error('Error loading questions:', error);
       setIsLoadingQuestions(false);
     }
-  };
+  }, [questionLimit]);
 
-  const handleComplete = (userAnswers: UserAnswer[]) => {
+  const handleComplete = useCallback((userAnswers: UserAnswer[]) => {
     setAnswers(userAnswers);
     setStage(Stage.RESULTS);
-  };
+  }, []);
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     setAnswers([]);
     setStage(Stage.WELCOME);
-  };
+  }, []);
+
+  const handleQuestionLimitChange = useCallback((count: number, label: string) => {
+    setQuestionLimit(count);
+    trackGTMEvent(GTMEvents.HOME_QUESTION_COUNT_SELECTED, {
+      count,
+      label,
+    });
+  }, []);
+
+  const handleOpenAreasModal = useCallback(() => {
+    setShowAreasModal(true);
+    trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
+  }, []);
+
+  const handleCloseAreasModal = useCallback(() => {
+    setShowAreasModal(false);
+    trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_CLOSED);
+  }, []);
+
+  const handleOpenPrivacyModal = useCallback(() => {
+    setShowPrivacyModal(true);
+    trackGTMEvent(GTMEvents.SECURITY_MESSAGE_SHOWN);
+  }, []);
+
+  const handleClosePrivacyModal = useCallback(() => {
+    setShowPrivacyModal(false);
+    trackGTMEvent(GTMEvents.SECURITY_MESSAGE_CLOSED);
+  }, []);
 
   if (stage === Stage.QUIZ) {
     return (
@@ -142,13 +170,7 @@ export default function Home() {
               {QUESTION_OPTIONS.map((option) => (
                 <button
                   key={option.count}
-                  onClick={() => {
-                    setQuestionLimit(option.count);
-                    trackGTMEvent(GTMEvents.HOME_QUESTION_COUNT_SELECTED, {
-                      count: option.count,
-                      label: option.label,
-                    });
-                  }}
+                  onClick={() => handleQuestionLimitChange(option.count, option.label)}
                   className={`
                     p-4 rounded-lg border-2 transition-all duration-200
                     ${questionLimit === option.count
@@ -186,10 +208,7 @@ export default function Home() {
         {/* Stats Grid */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={() => {
-              setShowAreasModal(true);
-              trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
-            }}
+            onClick={handleOpenAreasModal}
             className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95 w-64"
           >
             <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1 tabular-nums">
@@ -212,10 +231,7 @@ export default function Home() {
 
         {/* Privacy Note */}
         <button
-          onClick={() => {
-            setShowPrivacyModal(true);
-            trackGTMEvent(GTMEvents.SECURITY_MESSAGE_SHOWN);
-          }}
+          onClick={handleOpenPrivacyModal}
           className="flex items-center justify-center gap-2 text-xs text-gray-600 hover:text-gray-900 transition-colors cursor-pointer mx-auto"
         >
           <div className="w-3.5 h-3.5">
@@ -233,10 +249,7 @@ export default function Home() {
         {/* Policy Areas Modal */}
         <InfoModal
           isOpen={showAreasModal}
-          onClose={() => {
-            setShowAreasModal(false);
-            trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_CLOSED);
-          }}
+          onClose={handleCloseAreasModal}
           title="Áreas de Política"
         >
           <div className="space-y-3">
@@ -272,10 +285,7 @@ export default function Home() {
         {/* Privacy Modal */}
         <InfoModal
           isOpen={showPrivacyModal}
-          onClose={() => {
-            setShowPrivacyModal(false);
-            trackGTMEvent(GTMEvents.SECURITY_MESSAGE_CLOSED);
-          }}
+          onClose={handleClosePrivacyModal}
           title="Privado y Seguro"
         >
           <div className="space-y-4">

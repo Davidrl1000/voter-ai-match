@@ -66,7 +66,7 @@ export default function CandidatePositionsModal({
     }
   }, [isOpen, positions, isLoading, fetchPositions, partyName]);
 
-  const toggleArea = (area: string) => {
+  const toggleArea = useCallback((area: string) => {
     const newExpanded = new Set(expandedAreas);
     if (newExpanded.has(area)) {
       newExpanded.delete(area);
@@ -80,14 +80,14 @@ export default function CandidatePositionsModal({
       });
     }
     setExpandedAreas(newExpanded);
-  };
+  }, [expandedAreas, partyName]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     trackGTMEvent(GTMEvents.QUIZ_POSITIONS_CLOSED, {
       party: partyName,
     });
     onClose();
-  };
+  }, [partyName, onClose]);
 
   return (
     <InfoModal
