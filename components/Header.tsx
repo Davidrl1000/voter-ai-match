@@ -9,7 +9,8 @@ import Flag from './Flag';
 export default function Header() {
   const pathname = usePathname();
 
-  const handleLogoClick = useCallback(() => {
+  const handleLogoClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
     trackGTMEvent(GTMEvents.CANDIDATES_BACK_HOME, {
       source: 'header_logo',
     });
@@ -17,7 +18,8 @@ export default function Header() {
     window.location.href = '/';
   }, []);
 
-  const handleHomeClick = useCallback(() => {
+  const handleHomeClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
     trackGTMEvent(GTMEvents.CANDIDATES_BACK_HOME, {
       source: 'header_nav',
     });
@@ -46,9 +48,10 @@ export default function Header() {
       <header className="fixed top-12 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           {/* Logo/Title */}
-          <button
+          <Link
+            href="/"
             onClick={handleLogoClick}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <span className="text-xl sm:text-2xl font-bold bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
               Votante
@@ -56,17 +59,18 @@ export default function Header() {
             <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               AI
             </span>
-          </button>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="flex items-center gap-2">
             {pathname !== '/' && (
-              <button
+              <Link
+                href="/"
                 onClick={handleHomeClick}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-lg transition-all duration-200 cursor-pointer"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-lg transition-all duration-200"
               >
                 Inicio
-              </button>
+              </Link>
             )}
             {pathname !== '/candidates' && (
               <Link
