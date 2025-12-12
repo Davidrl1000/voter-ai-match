@@ -108,6 +108,17 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     }
   }, [answers.length]);
 
+  const handleRestart = useCallback(() => {
+    trackGTMEvent(GTMEvents.RESULTS_RESTART_CLICKED, {
+      questionCount: answers.length,
+    });
+    onRestart();
+  }, [answers.length, onRestart]);
+
+  const handleViewAllCandidates = useCallback(() => {
+    trackGTMEvent(GTMEvents.RESULTS_VIEW_ALL_CANDIDATES);
+  }, []);
+
   // Memoize candidate cards to prevent re-renders during AI streaming
   // Must be before early returns to satisfy React Hooks rules
   const topMatch = matches[0];
@@ -399,21 +410,14 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         <div className="mt-8 text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => {
-                trackGTMEvent(GTMEvents.RESULTS_RESTART_CLICKED, {
-                  questionCount: answers.length,
-                });
-                onRestart();
-              }}
+              onClick={handleRestart}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
             >
               Volver a empezar
             </button>
             <Link
               href="/candidates"
-              onClick={() => {
-                trackGTMEvent(GTMEvents.RESULTS_VIEW_ALL_CANDIDATES);
-              }}
+              onClick={handleViewAllCandidates}
               className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto inline-flex items-center justify-center"
             >
               Ver todos los candidatos

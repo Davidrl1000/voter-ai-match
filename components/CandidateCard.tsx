@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
@@ -45,6 +45,48 @@ export default function CandidateCard({
 }: CandidateCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPositionsModal, setShowPositionsModal] = useState(false);
+
+  const handlePlanClick = useCallback(() => {
+    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+      candidateName: name,
+      party,
+      action: 'plan_gobierno',
+    });
+  }, [name, party]);
+
+  const handleSiteClick = useCallback(() => {
+    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+      candidateName: name,
+      party,
+      action: 'candidaturas',
+    });
+  }, [name, party]);
+
+  const handleShowPositions = useCallback(() => {
+    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+      candidateName: name,
+      party,
+      action: 'ver_posiciones',
+    });
+    setShowPositionsModal(true);
+  }, [name, party]);
+
+  const handleShowStats = useCallback(() => {
+    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
+      candidateName: name,
+      party,
+      action: 'ver_estadisticas',
+    });
+    setIsFlipped(true);
+  }, [name, party]);
+
+  const handleFlipBack = useCallback(() => {
+    setIsFlipped(false);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setShowPositionsModal(false);
+  }, []);
 
   return (
     <>
@@ -103,13 +145,7 @@ export default function CandidateCard({
                   href={`/assets/docs/${plan}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => {
-                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
-                      candidateName: name,
-                      party,
-                      action: 'plan_gobierno',
-                    });
-                  }}
+                  onClick={handlePlanClick}
                   className="px-3 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-center"
                 >
                   Plan de Gobierno
@@ -118,39 +154,19 @@ export default function CandidateCard({
                   href={site}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => {
-                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
-                      candidateName: name,
-                      party,
-                      action: 'candidaturas',
-                    });
-                  }}
+                  onClick={handleSiteClick}
                   className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors text-center"
                 >
                   Candidaturas
                 </a>
                 <button
-                  onClick={() => {
-                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
-                      candidateName: name,
-                      party,
-                      action: 'ver_posiciones',
-                    });
-                    setShowPositionsModal(true);
-                  }}
+                  onClick={handleShowPositions}
                   className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Ver Posiciones
                 </button>
                 <button
-                  onClick={() => {
-                    trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
-                      candidateName: name,
-                      party,
-                      action: 'ver_estadisticas',
-                    });
-                    setIsFlipped(true);
-                  }}
+                  onClick={handleShowStats}
                   className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Ver Estadísticas
@@ -205,7 +221,7 @@ export default function CandidateCard({
 
               {/* Back Button */}
               <button
-                onClick={() => setIsFlipped(false)}
+                onClick={handleFlipBack}
                 className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all cursor-pointer"
               >
                 Volver
@@ -218,7 +234,7 @@ export default function CandidateCard({
       {/* Positions Modal */}
       <CandidatePositionsModal
         isOpen={showPositionsModal}
-        onClose={() => setShowPositionsModal(false)}
+        onClose={handleCloseModal}
         partyName={party}
         cachedPositions={cachedPositions}
         onPositionsLoaded={onPositionsLoaded}

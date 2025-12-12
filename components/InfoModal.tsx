@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 
 interface InfoModalProps {
@@ -13,6 +13,10 @@ interface InfoModalProps {
 export default function InfoModal({ isOpen, onClose, title, children }: InfoModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const handleModalClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   // Focus management and keyboard handling
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function InfoModal({ isOpen, onClose, title, children }: InfoModa
       <div
         ref={modalRef}
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleModalClick}
         tabIndex={-1}
         role="document"
       >
