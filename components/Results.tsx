@@ -319,18 +319,10 @@ export default function Results({ answers, onRestart }: ResultsProps) {
           </p>
         </div>
 
-        {/* AI Explanation - Always rendered to prevent page jump */}
-        <div
-          className={`mb-6 transition-all duration-700 ease-out ${
-            aiExplanation || isStreaming
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 -translate-y-4 max-h-0 overflow-hidden'
-          }`}
-          style={{
-            maxHeight: aiExplanation || isStreaming ? '1000px' : '0',
-            transition: 'opacity 0.5s ease-out, transform 0.5s ease-out, max-height 0.7s ease-out'
-          }}
-        >
+        {/* AI Explanation - Conditionally rendered */}
+        {(aiExplanation || isStreaming) && (
+          <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+
           <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 border-2 border-blue-100 rounded-xl p-6 overflow-hidden shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <div className={`w-5 h-5 ${isStreaming && !aiExplanation ? 'animate-pulse' : ''}`}>
@@ -396,7 +388,8 @@ export default function Results({ answers, onRestart }: ResultsProps) {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Top Match */}
         {topMatchCard}
