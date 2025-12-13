@@ -24,19 +24,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Votante AI - Encuentra tu candidato ideal para Costa Rica 2026",
-  description: "Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Responde preguntas sobre política, economía, salud, educación y más. Sistema imparcial powered by AI con análisis en 7 áreas clave.",
+  title: "Votante AI - Votaciones Costa Rica 2026 | Encuentra tu candidato ideal",
+  description: "Descubre qué candidato presidencial se alinea mejor con tus valores para las votaciones Costa Rica 2026. Quiz político imparcial powered by AI. Compara candidatos en economía, salud, educación, seguridad y más. Vota informado.",
   keywords: [
-    "votante ai",
+    "votaciones costa rica 2026",
     "elecciones costa rica 2026",
-    "candidatos presidenciales costa rica",
+    "candidatos presidenciales costa rica 2026",
+    "votante ai",
     "quiz político costa rica",
+    "test político costa rica",
     "matching político",
+    "comparar candidatos costa rica",
+    "elecciones presidenciales costa rica",
+    "voto informado costa rica",
+    "candidatos presidencia 2026",
+    "propuestas candidatos costa rica",
     "inteligencia artificial política",
-    "comparar candidatos",
-    "votación informada",
     "análisis político ai",
-    "elecciones presidenciales",
+    "a quién votar costa rica",
+    "guía electoral costa rica",
   ],
   authors: [{ name: "Votante AI" }],
   creator: "Votante AI",
@@ -60,30 +66,33 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_CR',
     url: 'https://votante-ai.com',
-    title: 'Votante AI - Encuentra tu candidato ideal para Costa Rica 2026',
-    description: 'Descubre qué candidato presidencial se alinea mejor con tus valores políticos para las elecciones de Costa Rica 2026. Sistema imparcial powered by AI con análisis en 7 áreas clave: economía, salud, educación, seguridad, ambiente, derechos sociales y corrupción.',
+    title: 'Votante AI - Votaciones Costa Rica 2026 | Quiz Político',
+    description: 'Quiz político imparcial para las votaciones Costa Rica 2026. Descubre qué candidato presidencial se alinea mejor con tus valores. Sistema powered by AI con análisis en 7 áreas: economía, salud, educación, seguridad, ambiente, derechos sociales y anticorrupción. Vota informado.',
     siteName: 'Votante AI',
     images: [
       {
-        url: '/assets/icons/ai-sparkle.svg',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Votante AI - Sistema de matching político para Costa Rica 2026',
+        alt: 'Votante AI - Quiz político para votaciones Costa Rica 2026',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Votante AI - Encuentra tu candidato ideal para Costa Rica 2026',
-    description: 'Sistema imparcial powered by AI. Responde preguntas y descubre qué candidato presidencial se alinea mejor con tus valores políticos.',
-    images: ['/assets/icons/ai-sparkle.svg'],
+    title: 'Votante AI - Votaciones Costa Rica 2026',
+    description: 'Quiz político imparcial powered by AI. Compara candidatos y descubre quién se alinea mejor con tus valores para las votaciones Costa Rica 2026.',
+    images: ['/og-image.png'],
     creator: '@votanteai',
     site: '@votanteai',
   },
   icons: {
-    icon: '/assets/icons/ai-sparkle.svg',
-    shortcut: '/assets/icons/ai-sparkle.svg',
-    apple: '/assets/icons/ai-sparkle.svg',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', type: 'image/png', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
   },
   manifest: '/manifest.json',
   category: 'Politics',
@@ -191,7 +200,7 @@ export default function RootLayout({
                 priceCurrency: 'USD',
               },
               description:
-                'Sistema de matching político imparcial powered by AI para las elecciones presidenciales de Costa Rica 2026. Ayuda a los votantes a descubrir qué candidato se alinea mejor con sus valores.',
+                'Quiz político imparcial powered by AI para las votaciones y elecciones presidenciales de Costa Rica 2026. Ayuda a los votantes a descubrir qué candidato se alinea mejor con sus valores comparando propuestas en 7 áreas clave.',
               url: 'https://votante-ai.com',
               inLanguage: 'es-CR',
               creator: {
@@ -200,14 +209,15 @@ export default function RootLayout({
                 url: 'https://votante-ai.com',
               },
               featureList: [
-                'Análisis político imparcial',
+                'Quiz político imparcial para votaciones Costa Rica 2026',
                 'Matching basado en inteligencia artificial',
-                'Comparación de candidatos en 7 áreas clave',
+                'Comparación de candidatos presidenciales en 7 áreas clave',
+                'Análisis de propuestas políticas',
                 'Resultados personalizados',
-                'Privacidad garantizada',
+                'Privacidad garantizada - voto anónimo',
               ],
               keywords:
-                'elecciones costa rica 2026, candidatos presidenciales, quiz político, matching político, inteligencia artificial',
+                'votaciones costa rica 2026, elecciones costa rica 2026, candidatos presidenciales, quiz político, test político, matching político, inteligencia artificial, voto informado',
             }),
           }}
         />
@@ -221,12 +231,13 @@ export default function RootLayout({
               '@type': 'Organization',
               name: 'Votante AI',
               url: 'https://votante-ai.com',
-              logo: 'https://votante-ai.com/assets/icons/ai-sparkle.svg',
+              logo: 'https://votante-ai.com/icon.png',
               description:
-                'Plataforma de información política imparcial para las elecciones de Costa Rica 2026.',
+                'Plataforma de información política imparcial para las votaciones y elecciones de Costa Rica 2026. Quiz político powered by AI.',
               sameAs: [
                 'https://github.com/Davidrl1000/voter-ai-match',
               ],
+              keywords: 'votaciones costa rica 2026, elecciones, candidatos presidenciales, quiz político',
             }),
           }}
         />
