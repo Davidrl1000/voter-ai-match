@@ -2,6 +2,9 @@
 
 AI-powered voter matching system for Costa Rica's 2026 presidential elections. Matches voters with candidates based on policy positions using transparent AI analysis.
 
+## Live site (Costa Rica 2026)
+Site: [https://votante-ai.com](https://votante-ai.com/)
+
 ## Features
 
 - **Neutral Question Generation**: Creates unbiased questions across 7 policy areas
