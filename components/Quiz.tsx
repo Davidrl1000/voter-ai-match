@@ -159,7 +159,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
   };
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] bg-gray-50 py-3 sm:py-8 px-4 flex items-center">
+    <div className="min-h-[calc(100vh-var(--header-height,7rem))] bg-gray-50 py-3 sm:py-8 px-4">
       <div className="max-w-2xl mx-auto w-full">
         {/* Screen reader announcement for question changes */}
         <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
