@@ -146,8 +146,20 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
     return null;
   }
 
+  const questionsRemaining = questions.length - (currentIndex + 1);
+  const timeEstimate = Math.ceil(questionsRemaining * 0.25); // ~15 seconds per question
+  const progressPercent = Math.round(progress);
+
+  // Motivational messages based on progress
+  const getMotivationalMessage = () => {
+    if (progressPercent >= 75) return '¡Un toque más! 🏁';
+    if (progressPercent >= 50) return '¡A medio camino! 🚀';
+    if (progressPercent >= 25) return '¡Vamos bien! ⚡';
+    return '¡Pura vida! 🌟';
+  };
+
   return (
-    <div className="min-h-[calc(100vh-7rem)] bg-gray-50 py-6 sm:py-8 px-4 flex items-center">
+    <div className="min-h-[calc(100vh-7rem)] bg-gray-50 py-3 sm:py-8 px-4 flex items-center">
       <div className="max-w-2xl mx-auto w-full">
         {/* Screen reader announcement for question changes */}
         <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -155,7 +167,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
         </div>
 
         {/* AI Badge */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-3 sm:mb-4">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-full">
             <div className="w-3.5 h-3.5">
               <Image
@@ -172,10 +184,33 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
           </div>
         </div>
 
-        {/* Progress */}
-        <div className="mb-6">
+        {/* Enhanced Progress Bar */}
+        <div className="mb-4 sm:mb-6 bg-white border-2 border-blue-100 rounded-xl p-3 sm:p-4 shadow-sm">
+          {/* Progress Stats */}
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                {progressPercent}%
+              </span>
+              <span className="text-xs sm:text-sm font-medium text-gray-600">
+                {getMotivationalMessage()}
+              </span>
+            </div>
+            <div className="text-right">
+              <p className="text-xs sm:text-sm font-semibold text-gray-700">
+                {currentIndex + 1} de {questions.length}
+              </p>
+              {questionsRemaining > 0 && (
+                <p className="text-xs text-gray-500">
+                  ~{timeEstimate} min
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
           <div
-            className="bg-white border border-gray-200 rounded-full h-2 overflow-hidden"
+            className="bg-gray-100 rounded-full h-3 sm:h-4 overflow-hidden relative"
             role="progressbar"
             aria-valuenow={currentIndex + 1}
             aria-valuemin={1}
@@ -183,19 +218,26 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
             aria-label={`Progreso del cuestionario: pregunta ${currentIndex + 1} de ${questions.length}`}
           >
             <div
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all duration-300"
+              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 h-full transition-all duration-500 ease-out relative overflow-hidden"
               style={{ width: `${progress}%` }}
-            ></div>
+            >
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center" aria-hidden="true">
-            Pregunta {currentIndex + 1} de {questions.length}
-          </p>
+
+          {/* Milestone message */}
+          {questionsRemaining > 0 && (
+            <p className="text-xs text-center mt-2 text-blue-600 font-medium">
+              ¡Solo {questionsRemaining} {questionsRemaining === 1 ? 'pregunta' : 'preguntas'} más para ver tu resultado!
+            </p>
+          )}
         </div>
 
         {/* Question Card */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-8">
           {/* Category Tag */}
-          <div className="mb-5">
+          <div className="mb-3 sm:mb-5">
             <span className="inline-block px-3 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full">
               {POLICY_AREA_LABELS[currentQuestion.policyArea] || currentQuestion.policyArea}
             </span>
@@ -204,22 +246,22 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
           {/* Question Text */}
           <h2
             id={`question-${currentIndex}`}
-            className="text-lg sm:text-xl font-semibold text-gray-900 mb-6"
+            className="text-base sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6"
           >
             {currentQuestion.text}
           </h2>
 
           {/* Linking text for specific-choice questions */}
           {currentQuestion.type === 'specific-choice' && (
-            <p className="text-sm text-gray-600 mb-4 font-medium">
+            <p className="text-sm text-gray-600 mb-3 sm:mb-4 font-medium">
               De las siguientes alternativas, seleccione la que mejor refleje su posición o área de interés:
             </p>
           )}
 
           {/* Answer Options */}
-          <fieldset className="mb-6">
+          <fieldset className="mb-4 sm:mb-6">
             <legend className="sr-only">Seleccione su respuesta</legend>
-            <div role="radiogroup" aria-labelledby={`question-${currentIndex}`} className="space-y-2.5">
+            <div role="radiogroup" aria-labelledby={`question-${currentIndex}`} className="space-y-2 sm:space-y-2.5">
               {currentQuestion.type === 'agreement-scale' ? (
                 agreementOptions.map((option) => (
                   <button
@@ -228,7 +270,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                     role="radio"
                     aria-checked={selectedAnswer === option.value}
                     aria-label={option.label}
-                    className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
+                    className={`w-full p-2.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
                       selectedAnswer === option.value
                         ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -258,7 +300,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                     role="radio"
                     aria-checked={selectedAnswer === option}
                     aria-label={option}
-                    className={`w-full p-3.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
+                    className={`w-full p-2.5 sm:p-4 text-left rounded-lg border-2 transition-all text-sm sm:text-base cursor-pointer ${
                       selectedAnswer === option
                         ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -272,13 +314,13 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
           </fieldset>
 
           {/* Navigation */}
-          <nav className="pt-4 border-t border-gray-100" aria-label="Navegación del cuestionario">
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+          <nav className="pt-3 sm:pt-4 border-t border-gray-100" aria-label="Navegación del cuestionario">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-between sm:gap-3">
               <button
                 onClick={handleBack}
                 disabled={currentIndex === 0}
                 aria-label={`Ir a la pregunta anterior (${currentIndex} de ${questions.length})`}
-                className="px-5 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-2 sm:order-1"
+                className="px-4 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
                 ← Anterior
               </button>
@@ -288,7 +330,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                 disabled={selectedAnswer === null}
                 aria-label={currentIndex === questions.length - 1 ? 'Finalizar cuestionario y ver resultados' : `Ir a la siguiente pregunta (${currentIndex + 2} de ${questions.length})`}
                 aria-disabled={selectedAnswer === null}
-                className="px-5 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all order-1 sm:order-2"
+                className="px-4 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
                 {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
               </button>
