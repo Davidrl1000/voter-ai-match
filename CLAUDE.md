@@ -55,8 +55,10 @@ lib/
     └── dynamodb.ts   # Database operations (includes BatchGet)
 
 scripts/
-├── train-system.ts      # Main training script
-└── audit-coverage.ts    # Coverage verification (100% test)
+├── train-system.ts       # Main training script
+├── audit-coverage.ts     # Verify 100% candidate coverage
+├── audit-fairness.ts     # Verify probability distribution & rotation
+└── extract-pdf-stats.ts  # Extract statistics from PDF files
 ```
 
 ## Code Style & Patterns
@@ -120,28 +122,36 @@ scripts/
 - **Why:** Better UX, simpler code, proven accuracy
 - See `docs/IMPLEMENTATION_PLAN.md` "Completed Phases Summary" for rationale
 
-### Matching Algorithm: Triple Pathway Architecture
-**CRITICAL:** The system uses a **Triple Pathway Architecture** that guarantees 100% candidate coverage (every candidate can rank #1):
+### Matching Algorithm: Fairness-First Rank-Based Scoring
+**CRITICAL:** The system uses **rank-based scoring with jitter** to ensure fair probability distribution:
 
-**Three Parallel Scoring Pathways:**
-1. **PATH 1 - Percentile Rank Matching**: Favors specialists with strong positions in specific areas
-2. **PATH 2 - Consistency Scoring**: Favors generalists with balanced positions across all areas
-3. **PATH 3 - Direct Similarity**: Favors comprehensive candidates with complete policy coverage
+**Algorithm:**
+1. **Z-score normalization**: Remove baseline embedding bias per candidate
+2. **Semantic alignment**: Calculate stance alignment using cosine similarity
+3. **10% random jitter**: Add small noise (±5%) to prevent systematic advantages
+4. **Rank all candidates**: Sort by jittered alignment scores
+5. **Linear point assignment**: 1st = 100 pts, last = 0 pts, linear scale between
+6. **Average across questions**: Final score = average points
 
-**Final score = MAX(path1, path2, path3)**
+**Why jitter is necessary:**
+- OpenAI embeddings have inherent bias (some candidates' positions naturally align better with questions)
+- Without jitter: CV = 89-130% (severe bias), same candidates always win
+- With 10% jitter: CV = 29-46% (acceptable), excellent rotation across different quizzes
+- Trade-off: Slight non-determinism, but results remain meaningful
 
-**Key Features:**
-- **Cosine similarity** on embeddings (semantic matching)
-- **35-point comprehensive bonus** for candidates with 7/7 policy areas
-- **Optimized with Maps** for O(1) lookups (NOT array.find/filter in loops)
-- **100% coverage verification** via automated audit script
-- **Policy area tracking** for alignment breakdown
+**Key Metrics:**
+- **100% coverage**: Every candidate can rank #1 ✅
+- **Fair rotation**: Different question sets favor different candidates ✅
+- **No "stuck" candidates**: 0 candidates systematically at top/bottom ✅
+- **Optimized**: O(1) lookups with Maps, ~300 lines (simplified from 450)
 
-**Documentation:** See `docs/TRIPLE_PATHWAY_ARCHITECTURE.md` for detailed explanation
+**Documentation:** See `docs/CHANGELOG.md` and `FAIRNESS_ANALYSIS.md`
 
-**Coverage Verification:**
+**Verification:**
 ```bash
-npx tsx scripts/audit-coverage.ts  # Verifies 100% coverage for 15, 20, 25 questions
+npm run audit              # Run all audits (coverage + fairness)
+npm run audit:coverage     # Verify 100% candidate coverage
+npm run audit:fairness     # Verify probability distribution & rotation
 ```
 
 ### Streaming
