@@ -107,7 +107,7 @@ async function auditFairness(questionCount: number, testCount: number) {
   const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
   const variance = counts.reduce((sum, count) => sum + Math.pow(count - mean, 2), 0) / counts.length;
   const stdDev = Math.sqrt(variance);
-  const cv = (stdDev / mean) * 100;
+  const cv = mean > 0 ? (stdDev / mean) * 100 : 0;
 
   console.log('📊 TOP 1 RANKING DISTRIBUTION:\n');
   console.log('Candidate                              #1 Count    %     Top3 %  Top5 %  Bot5 %');
