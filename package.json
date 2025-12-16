@@ -16,7 +16,9 @@
     "test:ui": "vitest --ui",
     "test:transparency": "vitest run tests/transparency",
     "test:coverage": "vitest run --coverage",
+    "audit": "tsx scripts/audit-coverage.ts && tsx scripts/audit-fairness.ts",
     "audit:coverage": "tsx scripts/audit-coverage.ts",
+    "audit:fairness": "tsx scripts/audit-fairness.ts",
     "extract:pdf-stats": "tsx scripts/extract-pdf-stats.ts"
   },
   "dependencies": {

@@ -218,7 +218,7 @@ async function testQuestionCount(
 
 async function runFullAudit(): Promise<void> {
   console.log('🎯 PRODUCTION COVERAGE AUDIT - ALL QUESTION COUNTS\n');
-  console.log('Goal: Verify 100% coverage for 15, 20, and 30 question suites\n');
+  console.log(`Goal: Verify 100% coverage for ${QUESTION_COUNTS.join(' | ')} question suites\n`);
   console.log('Ethical requirement: Every candidate must have a fair chance to rank #1\n');
 
   const candidatePositions = await loadCandidatePositions();
