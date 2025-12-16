@@ -111,9 +111,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        {/* Build version info - visible in page source */}
+        <meta name="build-version" content={process.env.NEXT_PUBLIC_GIT_SHA || 'unknown'} />
+        <meta name="build-time" content={process.env.NEXT_PUBLIC_BUILD_TIME || 'unknown'} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Build: {process.env.NEXT_PUBLIC_GIT_SHA} @ {process.env.NEXT_PUBLIC_BUILD_TIME} */}
+
         {/* Google Tag Manager */}
         {GTM_ID && (
           <Script
