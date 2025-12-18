@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Header from '@/components/Header';
@@ -11,6 +11,7 @@ import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '
 import { Stage } from '@/lib/types/stage';
 import type { Stage as StageType } from '@/lib/types/stage';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+import { clearQuizResults, hasNavigatedToCandidates } from '@/lib/session-storage';
 
 // Dynamically import heavy components to reduce initial bundle size
 const Quiz = dynamic(() => import('@/components/Quiz'), {
@@ -21,6 +22,18 @@ const Results = dynamic(() => import('@/components/Results'), {
   loading: () => <div className="min-h-screen flex items-center justify-center">Cargando resultados...</div>,
 });
 
+interface CachedResults {
+  matches: Array<{
+    candidateId: string;
+    name: string;
+    party: string;
+    score: number;
+    matchedPositions: number;
+    alignmentByArea: Record<string, number>;
+  }>;
+  aiExplanation: string;
+}
+
 export default function Home() {
   const [stage, setStage] = useState<StageType>(Stage.WELCOME);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
@@ -29,8 +42,41 @@ export default function Home() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [showAreasModal, setShowAreasModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [cachedResults, setCachedResults] = useState<CachedResults | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const cameFromCandidates = hasNavigatedToCandidates();
+    const sessionData = sessionStorage.getItem('quiz_results');
+
+    if (cameFromCandidates && sessionData) {
+      try {
+        const cached = JSON.parse(sessionData);
+        setTimeout(() => {
+          setAnswers(cached.answers);
+          setCachedResults({
+            matches: cached.matches,
+            aiExplanation: cached.aiExplanation,
+          });
+          setStage(Stage.RESULTS);
+        }, 0);
+      } catch (error) {
+        console.error('Error restoring session:', error);
+      }
+      return;
+    }
+
+    const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    const wasReloaded = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
+
+    if (wasReloaded && !cameFromCandidates) {
+      clearQuizResults();
+    }
+  }, []);
 
   const handleStart = useCallback(async () => {
+    clearQuizResults();
     setIsLoadingQuestions(true);
 
     // Track quiz start
@@ -62,7 +108,9 @@ export default function Home() {
   }, []);
 
   const handleRestart = useCallback(() => {
+    clearQuizResults();
     setAnswers([]);
+    setCachedResults(null);
     setStage(Stage.WELCOME);
   }, []);
 
@@ -111,7 +159,11 @@ export default function Home() {
     return (
       <>
         <Header />
-        <Results answers={answers} onRestart={handleRestart} />
+        <Results
+          answers={answers}
+          onRestart={handleRestart}
+          cachedResults={cachedResults}
+        />
       </>
     );
   }

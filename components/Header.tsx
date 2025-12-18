@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+import { clearQuizResults } from '@/lib/session-storage';
 import Flag from './Flag';
 
 export default function Header() {
@@ -11,29 +12,31 @@ export default function Header() {
 
   const handleLogoClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    clearQuizResults();
     trackGTMEvent(GTMEvents.CANDIDATES_BACK_HOME, {
       source: 'header_logo',
     });
-    // Always force reload to reset state
     window.location.href = '/';
   }, []);
 
   const handleHomeClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    clearQuizResults();
     trackGTMEvent(GTMEvents.CANDIDATES_BACK_HOME, {
       source: 'header_nav',
     });
-    // Always force reload to reset state
     window.location.href = '/';
   }, []);
 
   const handleCandidatesClick = useCallback(() => {
+    clearQuizResults();
     trackGTMEvent(GTMEvents.HOME_VIEW_CANDIDATES, {
       source: 'header_nav',
     });
   }, []);
 
   const handleNotesClick = useCallback(() => {
+    clearQuizResults();
     trackGTMEvent(GTMEvents.NOTES_BACK_HOME, {
       source: 'header_nav',
     });

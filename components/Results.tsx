@@ -8,6 +8,7 @@ import { POLICY_AREA_LABELS } from '@/lib/constants';
 import { getPhotoPath } from '@/lib/candidate-assets';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
 import { partyToSlug } from '@/lib/utils';
+import { loadQuizResults, saveQuizResults, markNavigatedToCandidates } from '@/lib/session-storage';
 import LoadingSpinner from './LoadingSpinner';
 
 interface CandidateMatch {
@@ -22,6 +23,10 @@ interface CandidateMatch {
 interface ResultsProps {
   answers: UserAnswer[];
   onRestart: () => void;
+  cachedResults?: {
+    matches: CandidateMatch[];
+    aiExplanation: string;
+  } | null;
 }
 
 /**
@@ -32,14 +37,14 @@ function formatScore(score: number): string {
   return score.toFixed(1);
 }
 
-export default function Results({ answers, onRestart }: ResultsProps) {
-  const [matches, setMatches] = useState<CandidateMatch[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function Results({ answers, onRestart, cachedResults }: ResultsProps) {
+  const [matches, setMatches] = useState<CandidateMatch[]>(cachedResults?.matches || []);
+  const [loading, setLoading] = useState(!cachedResults);
   const [error, setError] = useState<string | null>(null);
-  const [aiExplanation, setAiExplanation] = useState('');
+  const [aiExplanation, setAiExplanation] = useState(cachedResults?.aiExplanation || '');
   const [isStreaming, setIsStreaming] = useState(false);
-  const hasStreamedRef = useRef(false);
-  const hasCalculatedRef = useRef(false);
+  const hasStreamedRef = useRef(!!cachedResults);
+  const hasCalculatedRef = useRef(!!cachedResults);
 
   const streamExplanation = useCallback(async (matchesData: CandidateMatch[]) => {
     // Prevent multiple requests
@@ -67,6 +72,12 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
       const data = await response.json();
       const explanation = data.explanation || '';
+
+      saveQuizResults({
+        answers,
+        matches: matchesData,
+        aiExplanation: explanation,
+      });
 
       // Client-side streaming simulation (Amplify buffers real SSE)
       let currentIndex = 0;
@@ -107,7 +118,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       setIsStreaming(false);
       hasStreamedRef.current = false;
     }
-  }, [answers.length]);
+  }, [answers]);
 
   const handleRestart = useCallback(() => {
     trackGTMEvent(GTMEvents.RESULTS_RESTART_CLICKED, {
@@ -173,6 +184,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         {/* Link to candidate profile */}
         <Link
           href={`/candidates#${partyToSlug(topMatch.party)}`}
+          onClick={markNavigatedToCandidates}
           className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
         >
           <span>Ver perfil completo</span>
@@ -246,6 +258,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             {/* Link to candidate profile */}
             <Link
               href={`/candidates#${partyToSlug(match.party)}`}
+              onClick={markNavigatedToCandidates}
               className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
             >
               Ver perfil completo
@@ -275,6 +288,22 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       hasCalculatedRef.current = true;
 
       try {
+        const cachedResults = loadQuizResults(answers);
+        if (cachedResults) {
+          setMatches(cachedResults.matches);
+          setAiExplanation(cachedResults.aiExplanation);
+          setLoading(false);
+          hasStreamedRef.current = true;
+
+          trackGTMEvent(GTMEvents.RESULTS_VIEWED, {
+            topMatchName: cachedResults.matches[0]?.name,
+            topMatchScore: cachedResults.matches[0]?.score,
+            questionCount: answers.length,
+            totalCandidates: cachedResults.matches.length,
+          });
+          return;
+        }
+
         const response = await fetch('/api/match', {
           method: 'POST',
           headers: {
