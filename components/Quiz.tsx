@@ -119,7 +119,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
       setIsProcessing(false);
     } catch (error) {
       setIsProcessing(false);
-      throw error;
+      console.error("An error occurred while processing the answer:", error);
     }
   }, [isProcessing, selectedAnswer, currentQuestion, currentIndex, answers, questions.length, onComplete]);
 
