@@ -7,6 +7,8 @@ import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
 import { getPhotoPath } from '@/lib/candidate-assets';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+import { partyToSlug } from '@/lib/utils';
+import { loadQuizResults, saveQuizResults, markNavigatedToCandidates } from '@/lib/session-storage';
 import LoadingSpinner from './LoadingSpinner';
 
 interface CandidateMatch {
@@ -21,6 +23,10 @@ interface CandidateMatch {
 interface ResultsProps {
   answers: UserAnswer[];
   onRestart: () => void;
+  cachedResults?: {
+    matches: CandidateMatch[];
+    aiExplanation: string;
+  } | null;
 }
 
 /**
@@ -31,14 +37,14 @@ function formatScore(score: number): string {
   return score.toFixed(1);
 }
 
-export default function Results({ answers, onRestart }: ResultsProps) {
-  const [matches, setMatches] = useState<CandidateMatch[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function Results({ answers, onRestart, cachedResults }: ResultsProps) {
+  const [matches, setMatches] = useState<CandidateMatch[]>(cachedResults?.matches || []);
+  const [loading, setLoading] = useState(!cachedResults);
   const [error, setError] = useState<string | null>(null);
-  const [aiExplanation, setAiExplanation] = useState('');
+  const [aiExplanation, setAiExplanation] = useState(cachedResults?.aiExplanation || '');
   const [isStreaming, setIsStreaming] = useState(false);
-  const hasStreamedRef = useRef(false);
-  const hasCalculatedRef = useRef(false);
+  const hasStreamedRef = useRef(!!cachedResults);
+  const hasCalculatedRef = useRef(!!cachedResults);
 
   const streamExplanation = useCallback(async (matchesData: CandidateMatch[]) => {
     // Prevent multiple requests
@@ -66,6 +72,12 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
       const data = await response.json();
       const explanation = data.explanation || '';
+
+      saveQuizResults({
+        answers,
+        matches: matchesData,
+        aiExplanation: explanation,
+      });
 
       // Client-side streaming simulation (Amplify buffers real SSE)
       let currentIndex = 0;
@@ -106,7 +118,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       setIsStreaming(false);
       hasStreamedRef.current = false;
     }
-  }, [answers.length]);
+  }, [answers]);
 
   const handleRestart = useCallback(() => {
     trackGTMEvent(GTMEvents.RESULTS_RESTART_CLICKED, {
@@ -114,10 +126,6 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     });
     onRestart();
   }, [answers.length, onRestart]);
-
-  const handleViewAllCandidates = useCallback(() => {
-    trackGTMEvent(GTMEvents.RESULTS_VIEW_ALL_CANDIDATES);
-  }, []);
 
   // Memoize candidate cards to prevent re-renders during AI streaming
   // Must be before early returns to satisfy React Hooks rules
@@ -161,7 +169,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
           </div>
         </div>
 
-        <div className="border-t border-blue-400 pt-4">
+        <div className="border-t border-blue-400 pt-4 mb-4">
           <p className="text-xs text-blue-100 mb-3">Alineación por área:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {Object.entries(topMatch.alignmentByArea).map(([area, score]) => (
@@ -172,6 +180,22 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             ))}
           </div>
         </div>
+
+        {/* Link to candidate profile */}
+        <Link
+          href={`/candidates#${partyToSlug(topMatch.party)}`}
+          onClick={markNavigatedToCandidates}
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
+        >
+          <span>Ver perfil completo</span>
+          <Image
+            src="/assets/icons/arrow-right.svg"
+            alt=""
+            width={16}
+            height={16}
+            className="w-4 h-4 brightness-0 invert"
+          />
+        </Link>
       </div>
     );
   }, [topMatch]);
@@ -217,7 +241,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             </div>
 
             {/* Top Areas */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               {Object.entries(match.alignmentByArea)
                 .sort(([, a], [, b]) => b - a)
                 .slice(0, 3)
@@ -230,6 +254,22 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                   </span>
                 ))}
             </div>
+
+            {/* Link to candidate profile */}
+            <Link
+              href={`/candidates#${partyToSlug(match.party)}`}
+              onClick={markNavigatedToCandidates}
+              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+            >
+              Ver perfil completo
+              <Image
+                src="/assets/icons/arrow-right.svg"
+                alt=""
+                width={14}
+                height={14}
+                className="w-3.5 h-3.5"
+              />
+            </Link>
           </div>
 
           {/* Score */}
@@ -248,6 +288,22 @@ export default function Results({ answers, onRestart }: ResultsProps) {
       hasCalculatedRef.current = true;
 
       try {
+        const cachedResults = loadQuizResults(answers);
+        if (cachedResults) {
+          setMatches(cachedResults.matches);
+          setAiExplanation(cachedResults.aiExplanation);
+          setLoading(false);
+          hasStreamedRef.current = true;
+
+          trackGTMEvent(GTMEvents.RESULTS_VIEWED, {
+            topMatchName: cachedResults.matches[0]?.name,
+            topMatchScore: cachedResults.matches[0]?.score,
+            questionCount: answers.length,
+            totalCandidates: cachedResults.matches.length,
+          });
+          return;
+        }
+
         const response = await fetch('/api/match', {
           method: 'POST',
           headers: {
@@ -319,61 +375,65 @@ export default function Results({ answers, onRestart }: ResultsProps) {
           </p>
         </div>
 
-        {/* AI Explanation - Conditionally rendered */}
-        {(aiExplanation || isStreaming) && (
-          <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+        {/* Top Match */}
+        {topMatchCard}
 
-          <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 border-2 border-blue-100 rounded-xl p-6 overflow-hidden shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className={`w-5 h-5 ${isStreaming && !aiExplanation ? 'animate-pulse' : ''}`}>
+        {/* AI Explanation - Positioned after top match */}
+        {(aiExplanation || isStreaming) && (
+          <div className="mb-6 animate-slide-up-fade">
+
+          <div className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 border-2 border-purple-200 rounded-xl p-6 shadow-lg">
+            {/* Decorative gradient border glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-pink-400/20 to-purple-400/20 blur-xl -z-10"></div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0">
                 <Image
                   src="/assets/icons/ai-sparkle.svg"
                   alt=""
-                  width={20}
-                  height={20}
-                  className="w-full h-full"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
                 />
               </div>
-              <h2 className="text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Análisis con IA
-              </h2>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
+                  Análisis Personalizado con IA
+                </h2>
+                <p className="text-xs text-gray-600">Generado especialmente para tus respuestas</p>
+              </div>
               {isStreaming && !aiExplanation && (
-                <span className="ml-auto flex items-center gap-2">
+                <span className="flex items-center gap-2 text-purple-600">
                   <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </div>
-                  <span className="text-xs font-medium text-blue-600">Generando...</span>
                 </span>
               )}
             </div>
 
-            {/* Loading State - Before content starts */}
+            {/* Minimal Loading State */}
             {isStreaming && !aiExplanation && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+              <div className="bg-white/50 border border-purple-200 rounded-lg p-6">
+                <div className="flex items-center gap-4">
+                  {/* Simple spinner */}
                   <div className="flex-shrink-0">
                     <div className="relative w-10 h-10">
-                      <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-                      <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 border-4 border-purple-100 rounded-full"></div>
+                      <div className="absolute inset-0 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
                     </div>
                   </div>
+
+                  {/* Clean text */}
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900 mb-1">
-                      Analizando tus respuestas...
+                      Generando análisis con IA...
                     </p>
                     <p className="text-xs text-gray-600">
-                      La IA está comparando tus posiciones con los candidatos
+                      Comparando tus {answers.length} respuestas con los candidatos
                     </p>
                   </div>
-                </div>
-
-                {/* Skeleton loading bars */}
-                <div className="space-y-2 px-1">
-                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '95%' }}></div>
-                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '88%', animationDelay: '75ms' }}></div>
-                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '92%', animationDelay: '150ms' }}></div>
                 </div>
               </div>
             )}
@@ -383,16 +443,13 @@ export default function Results({ answers, onRestart }: ResultsProps) {
               <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {aiExplanation}
                 {isStreaming && (
-                  <span className="relative top-[3px] inline-block w-0.5 h-4 bg-blue-600 ml-0.5 animate-pulse"></span>
+                  <span className="relative top-[3px] inline-block w-0.5 h-4 bg-purple-600 ml-0.5 animate-pulse"></span>
                 )}
               </div>
             )}
           </div>
           </div>
         )}
-
-        {/* Top Match */}
-        {topMatchCard}
 
         {/* Other Matches */}
         <div className="space-y-3">
@@ -401,21 +458,12 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
         {/* Actions */}
         <div className="mt-8 text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={handleRestart}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
-            >
-              Volver a empezar
-            </button>
-            <Link
-              href="/candidates"
-              onClick={handleViewAllCandidates}
-              className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto inline-flex items-center justify-center"
-            >
-              Ver todos los candidatos
-            </Link>
-          </div>
+          <button
+            onClick={handleRestart}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99]"
+          >
+            Volver a empezar
+          </button>
           <p className="text-xs text-gray-500">
             Estos resultados son solo una guía. Investiga a cada candidato antes de votar.
           </p>

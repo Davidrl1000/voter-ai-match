@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import InfoModal from '@/components/InfoModal';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import type { Question } from '@/lib/db/dynamodb';
-import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '@/lib/constants';
+import { API_LIMITS, QUESTION_OPTIONS } from '@/lib/constants';
 import { Stage } from '@/lib/types/stage';
 import type { Stage as StageType } from '@/lib/types/stage';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+import { clearQuizResults, hasNavigatedToCandidates } from '@/lib/session-storage';
 
 // Dynamically import heavy components to reduce initial bundle size
 const Quiz = dynamic(() => import('@/components/Quiz'), {
@@ -21,16 +22,60 @@ const Results = dynamic(() => import('@/components/Results'), {
   loading: () => <div className="min-h-screen flex items-center justify-center">Cargando resultados...</div>,
 });
 
+interface CachedResults {
+  matches: Array<{
+    candidateId: string;
+    name: string;
+    party: string;
+    score: number;
+    matchedPositions: number;
+    alignmentByArea: Record<string, number>;
+  }>;
+  aiExplanation: string;
+}
+
 export default function Home() {
   const [stage, setStage] = useState<StageType>(Stage.WELCOME);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [questionLimit, setQuestionLimit] = useState<number>(API_LIMITS.QUESTIONS.DEFAULT);
   const [preloadedQuestions, setPreloadedQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-  const [showAreasModal, setShowAreasModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [cachedResults, setCachedResults] = useState<CachedResults | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const cameFromCandidates = hasNavigatedToCandidates();
+    const sessionData = sessionStorage.getItem('quiz_results');
+
+    if (cameFromCandidates && sessionData) {
+      try {
+        const cached = JSON.parse(sessionData);
+        setTimeout(() => {
+          setAnswers(cached.answers);
+          setCachedResults({
+            matches: cached.matches,
+            aiExplanation: cached.aiExplanation,
+          });
+          setStage(Stage.RESULTS);
+        }, 0);
+      } catch (error) {
+        console.error('Error restoring session:', error);
+      }
+      return;
+    }
+
+    const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    const wasReloaded = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
+
+    if (wasReloaded && !cameFromCandidates) {
+      clearQuizResults();
+    }
+  }, []);
 
   const handleStart = useCallback(async () => {
+    clearQuizResults();
     setIsLoadingQuestions(true);
 
     // Track quiz start
@@ -62,7 +107,9 @@ export default function Home() {
   }, []);
 
   const handleRestart = useCallback(() => {
+    clearQuizResults();
     setAnswers([]);
+    setCachedResults(null);
     setStage(Stage.WELCOME);
   }, []);
 
@@ -72,16 +119,6 @@ export default function Home() {
       count,
       label,
     });
-  }, []);
-
-  const handleOpenAreasModal = useCallback(() => {
-    setShowAreasModal(true);
-    trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
-  }, []);
-
-  const handleCloseAreasModal = useCallback(() => {
-    setShowAreasModal(false);
-    trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_CLOSED);
   }, []);
 
   const handleOpenPrivacyModal = useCallback(() => {
@@ -111,7 +148,11 @@ export default function Home() {
     return (
       <>
         <Header />
-        <Results answers={answers} onRestart={handleRestart} />
+        <Results
+          answers={answers}
+          onRestart={handleRestart}
+          cachedResults={cachedResults}
+        />
       </>
     );
   }
@@ -199,33 +240,22 @@ export default function Home() {
           <button
             onClick={handleStart}
             disabled={isLoadingQuestions}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
           >
-            {isLoadingQuestions ? 'Cargando preguntas...' : 'Comenzar →'}
-          </button>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={handleOpenAreasModal}
-            className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95 w-64"
-          >
-            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1 tabular-nums">
-              {POLICY_AREAS.length}
-            </div>
-            <div className="text-xs text-blue-700 flex items-center justify-center gap-1">
-              <span>Áreas</span>
-              <div className="w-3 h-3">
+            {isLoadingQuestions ? (
+              'Cargando preguntas...'
+            ) : (
+              <>
+                <span>Comenzar</span>
                 <Image
-                  src="/assets/icons/info-circle.svg"
-                  alt="Información"
-                  width={12}
-                  height={12}
-                  className="w-full h-full"
+                  src="/assets/icons/arrow-right.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 brightness-0 invert"
                 />
-              </div>
-            </div>
+              </>
+            )}
           </button>
         </div>
 
@@ -245,42 +275,6 @@ export default function Home() {
           </div>
           <span className="underline decoration-dotted underline-offset-2">Privado y seguro</span>
         </button>
-
-        {/* Policy Areas Modal */}
-        <InfoModal
-          isOpen={showAreasModal}
-          onClose={handleCloseAreasModal}
-          title="Áreas de Política"
-        >
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600 mb-4">
-              Analizamos tus respuestas en estas 7 áreas clave de política costarricense:
-            </p>
-            <div className="space-y-2">
-              {[...POLICY_AREAS]
-                .sort((a, b) => POLICY_AREA_LABELS[a].localeCompare(POLICY_AREA_LABELS[b]))
-                .map((area) => (
-                  <div
-                    key={area}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg"
-                  >
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center p-1.5">
-                      <Image
-                        src={`/assets/icons/${area}.svg`}
-                        alt=""
-                        width={20}
-                        height={20}
-                        className="w-full h-full brightness-0 invert"
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">
-                      {POLICY_AREA_LABELS[area]}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </InfoModal>
 
         {/* Privacy Modal */}
         <InfoModal

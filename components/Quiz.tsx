@@ -150,13 +150,15 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
   const timeEstimate = Math.ceil(questionsRemaining * 0.25); // ~15 seconds per question
   const progressPercent = Math.round(progress);
 
-  // Motivational messages based on progress
-  const getMotivationalMessage = () => {
-    if (progressPercent >= 75) return '¡Un toque más! 🏁';
-    if (progressPercent >= 50) return '¡A medio camino! 🚀';
-    if (progressPercent >= 25) return '¡Vamos bien! ⚡';
-    return '¡Pura vida! 🌟';
+  // Motivational messages with icons based on progress
+  const getMotivationalData = () => {
+    if (progressPercent >= 75) return { message: '¡Un toque más!', icon: '/assets/icons/flag.svg' };
+    if (progressPercent >= 50) return { message: '¡A medio camino!', icon: '/assets/icons/rocket.svg' };
+    if (progressPercent >= 25) return { message: '¡Vamos bien!', icon: '/assets/icons/lightning.svg' };
+    return { message: '¡Pura vida!', icon: '/assets/icons/star.svg' };
   };
+
+  const motivationalData = getMotivationalData();
 
   return (
     <div className="min-h-[calc(100vh-var(--header-height,7rem))] bg-gray-50 py-3 sm:py-8 px-4">
@@ -192,9 +194,18 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 {progressPercent}%
               </span>
-              <span className="text-xs sm:text-sm font-medium text-gray-600">
-                {getMotivationalMessage()}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <Image
+                  src={motivationalData.icon}
+                  alt=""
+                  width={16}
+                  height={16}
+                  className="w-4 h-4"
+                />
+                <span className="text-xs sm:text-sm font-medium text-gray-600">
+                  {motivationalData.message}
+                </span>
+              </div>
             </div>
             <div className="text-right">
               <p className="text-xs sm:text-sm font-semibold text-gray-700">
@@ -320,9 +331,16 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                 onClick={handleBack}
                 disabled={currentIndex === 0}
                 aria-label={`Ir a la pregunta anterior (${currentIndex} de ${questions.length})`}
-                className="px-4 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="px-4 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2"
               >
-                ← Anterior
+                <Image
+                  src="/assets/icons/arrow-left.svg"
+                  alt=""
+                  width={16}
+                  height={16}
+                  className="w-4 h-4"
+                />
+                <span>Anterior</span>
               </button>
 
               <button
@@ -330,9 +348,16 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
                 disabled={selectedAnswer === null}
                 aria-label={currentIndex === questions.length - 1 ? 'Finalizar cuestionario y ver resultados' : `Ir a la siguiente pregunta (${currentIndex + 2} de ${questions.length})`}
                 aria-disabled={selectedAnswer === null}
-                className="px-4 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="px-4 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2"
               >
-                {currentIndex === questions.length - 1 ? 'Ver Resultados →' : 'Siguiente →'}
+                <span>{currentIndex === questions.length - 1 ? 'Ver Resultados' : 'Siguiente'}</span>
+                <Image
+                  src="/assets/icons/arrow-right.svg"
+                  alt=""
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 brightness-0 invert"
+                />
               </button>
             </div>
           </nav>

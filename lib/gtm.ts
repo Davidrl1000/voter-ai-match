@@ -56,6 +56,8 @@ export const GTMEvents = {
   // Notes Page Events
   NOTES_PAGE_VIEWED: 'notes_page_viewed',
   NOTES_BACK_HOME: 'notes_back_home',
+  NOTES_GITHUB_CLICKED: 'notes_github_clicked',
+  NOTES_LINKEDIN_CLICKED: 'notes_linkedin_clicked',
 
   // Widget Events
   STATS_WIDGET_CLICKED: 'stats_widget_clicked',

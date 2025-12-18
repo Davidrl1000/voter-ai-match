@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Header from '@/components/Header';
 import InfoBlock from '@/components/InfoBlock';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+import { POLICY_AREAS, POLICY_AREA_LABELS } from '@/lib/constants';
 
 export default function NotesPage() {
   // Track page view on mount
@@ -30,16 +31,37 @@ export default function NotesPage() {
 
           {/* Content */}
           <div className="prose prose-gray max-w-none">
-            <InfoBlock title="Sobre esta herramienta">
-              <p className="leading-relaxed mb-4">
-                Votante AI es una herramienta informativa diseñada para ayudarte a explorar qué candidato presidencial podría alinearse con tus valores y prioridades políticas para las elecciones de Costa Rica 2026.
-              </p>
-              <p className="leading-relaxed">
-                El cuestionario utiliza modelos de inteligencia artificial para analizar textos públicos, pero los resultados son aproximaciones basadas en información disponible y no representan una recomendación, predicción ni evaluación oficial.
-              </p>
-            </InfoBlock>
+            <div id="sobre">
+              <InfoBlock title="Sobre esta herramienta">
+                <p className="leading-relaxed mb-4">
+                  Votante AI es una herramienta informativa diseñada para ayudarte a explorar qué candidato presidencial podría alinearse con tus valores y prioridades políticas para las elecciones de Costa Rica 2026.
+                </p>
+                <p className="leading-relaxed">
+                  El cuestionario utiliza modelos de inteligencia artificial para analizar textos públicos, pero los resultados son aproximaciones basadas en información disponible y no representan una recomendación, predicción ni evaluación oficial.
+                </p>
+              </InfoBlock>
+            </div>
 
-            <InfoBlock title="Cómo funciona">
+            <div id="areas">
+              <InfoBlock title="Áreas de Política">
+                <p className="leading-relaxed mb-4">
+                  Analizamos tus respuestas en estas 7 áreas clave de política costarricense:
+                </p>
+                <ul className="space-y-2">
+                  {[...POLICY_AREAS]
+                    .sort((a, b) => POLICY_AREA_LABELS[a].localeCompare(POLICY_AREA_LABELS[b]))
+                    .map((area) => (
+                      <li key={area} className="flex items-start gap-2">
+                        <span className="text-blue-600">•</span>
+                        <span className="leading-relaxed">{POLICY_AREA_LABELS[area]}</span>
+                      </li>
+                    ))}
+                </ul>
+              </InfoBlock>
+            </div>
+
+            <div id="como-funciona">
+              <InfoBlock title="Cómo funciona">
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">1. Responde el cuestionario</h3>
@@ -61,8 +83,10 @@ export default function NotesPage() {
                 </div>
               </div>
             </InfoBlock>
+            </div>
 
-            <InfoBlock title="Importante" variant="highlighted">
+            <div id="importante">
+              <InfoBlock title="Importante" variant="highlighted">
               <ul className="space-y-3">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 mt-1">•</span>
@@ -102,8 +126,10 @@ export default function NotesPage() {
                 </li>
               </ul>
             </InfoBlock>
+            </div>
 
-            <InfoBlock title="Transparencia">
+            <div id="transparencia">
+              <InfoBlock title="Transparencia">
               <p className="leading-relaxed mb-4">
                 Este proyecto utiliza tecnologías de inteligencia artificial de OpenAI para generar preguntas y explicaciones, pero el proceso de coincidencia entre respuestas y candidatos es completamente determinista, verificable y documentado.
               </p>
@@ -113,6 +139,7 @@ export default function NotesPage() {
                   href="https://github.com/Davidrl1000/voter-ai-match"
                   className="underline"
                   target="_blank"
+                  onClick={() => trackGTMEvent(GTMEvents.NOTES_GITHUB_CLICKED)}
                 >
                   este repositorio
                 </a>, lo que garantiza neutralidad, auditabilidad y la posibilidad de que cualquier persona examine cómo funciona el sistema.
@@ -127,11 +154,13 @@ export default function NotesPage() {
                   href="https://www.linkedin.com/in/davidrl1000"
                   className="underline"
                   target="_blank"
+                  onClick={() => trackGTMEvent(GTMEvents.NOTES_LINKEDIN_CLICKED)}
                 >
                   David Rojas
                 </a>.
               </p>
             </InfoBlock>
+            </div>
 
           </div>
         </div>
