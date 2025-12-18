@@ -11,12 +11,20 @@ declare global {
 
 /**
  * Send an event to Google Tag Manager
+ * Non-blocking: Uses queueMicrotask to ensure tracking never blocks UI updates
  */
 export function trackGTMEvent(event: string, data?: Record<string, unknown>) {
   if (typeof window !== 'undefined' && window.dataLayer) {
-    window.dataLayer.push({
-      event,
-      ...data,
+    queueMicrotask(() => {
+      try {
+        window.dataLayer.push({
+          event,
+          ...data,
+        });
+      } catch (error) {
+        // Silently fail - don't let analytics errors break the app
+        console.warn('GTM tracking error:', error);
+      }
     });
   }
 }

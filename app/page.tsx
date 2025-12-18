@@ -75,13 +75,11 @@ export default function Home() {
   }, []);
 
   const handleStart = useCallback(async () => {
+    // Prevent double-clicks
+    if (isLoadingQuestions) return;
+
     clearQuizResults();
     setIsLoadingQuestions(true);
-
-    // Track quiz start
-    trackGTMEvent(GTMEvents.HOME_START_QUIZ, {
-      question_count: questionLimit,
-    });
 
     try {
       const response = await fetch(`/api/questions?limit=${questionLimit}`);
@@ -91,7 +89,9 @@ export default function Home() {
       setIsLoadingQuestions(false);
       setStage(Stage.QUIZ);
 
-      // Track quiz started
+      trackGTMEvent(GTMEvents.HOME_START_QUIZ, {
+        question_count: questionLimit,
+      });
       trackGTMEvent(GTMEvents.QUIZ_STARTED, {
         question_count: questionLimit,
       });
@@ -99,7 +99,7 @@ export default function Home() {
       console.error('Error loading questions:', error);
       setIsLoadingQuestions(false);
     }
-  }, [questionLimit]);
+  }, [isLoadingQuestions, questionLimit]);
 
   const handleComplete = useCallback((userAnswers: UserAnswer[]) => {
     setAnswers(userAnswers);
@@ -115,6 +115,8 @@ export default function Home() {
 
   const handleQuestionLimitChange = useCallback((count: number, label: string) => {
     setQuestionLimit(count);
+
+    // Track (GTM is non-blocking internally)
     trackGTMEvent(GTMEvents.HOME_QUESTION_COUNT_SELECTED, {
       count,
       label,
@@ -243,7 +245,10 @@ export default function Home() {
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
           >
             {isLoadingQuestions ? (
-              'Cargando preguntas...'
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Cargando preguntas...</span>
+              </>
             ) : (
               <>
                 <span>Comenzar</span>
