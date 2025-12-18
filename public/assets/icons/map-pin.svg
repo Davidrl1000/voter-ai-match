@@ -1,0 +1,9 @@
+<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mapPinGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" fill="url(#mapPinGradient)"/>
+</svg>

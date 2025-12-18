@@ -31,6 +31,18 @@ function formatScore(score: number): string {
   return score.toFixed(1);
 }
 
+/**
+ * Convert party name to URL-safe slug for deep linking
+ */
+function partyToSlug(party: string): string {
+  return party
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '');
+}
+
 export default function Results({ answers, onRestart }: ResultsProps) {
   const [matches, setMatches] = useState<CandidateMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,10 +127,6 @@ export default function Results({ answers, onRestart }: ResultsProps) {
     onRestart();
   }, [answers.length, onRestart]);
 
-  const handleViewAllCandidates = useCallback(() => {
-    trackGTMEvent(GTMEvents.RESULTS_VIEW_ALL_CANDIDATES);
-  }, []);
-
   // Memoize candidate cards to prevent re-renders during AI streaming
   // Must be before early returns to satisfy React Hooks rules
   const topMatch = matches[0];
@@ -161,7 +169,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
           </div>
         </div>
 
-        <div className="border-t border-blue-400 pt-4">
+        <div className="border-t border-blue-400 pt-4 mb-4">
           <p className="text-xs text-blue-100 mb-3">Alineación por área:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {Object.entries(topMatch.alignmentByArea).map(([area, score]) => (
@@ -172,6 +180,14 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             ))}
           </div>
         </div>
+
+        {/* Link to candidate profile */}
+        <Link
+          href={`/candidates#${partyToSlug(topMatch.party)}`}
+          className="block w-full px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold rounded-lg transition-all text-center active:scale-[0.98]"
+        >
+          Ver perfil completo de {topMatch.name} →
+        </Link>
       </div>
     );
   }, [topMatch]);
@@ -217,7 +233,7 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             </div>
 
             {/* Top Areas */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               {Object.entries(match.alignmentByArea)
                 .sort(([, a], [, b]) => b - a)
                 .slice(0, 3)
@@ -230,6 +246,15 @@ export default function Results({ answers, onRestart }: ResultsProps) {
                   </span>
                 ))}
             </div>
+
+            {/* Link to candidate profile */}
+            <Link
+              href={`/candidates#${partyToSlug(match.party)}`}
+              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+            >
+              Ver perfil completo
+              <span className="text-xs">→</span>
+            </Link>
           </div>
 
           {/* Score */}
@@ -402,21 +427,12 @@ export default function Results({ answers, onRestart }: ResultsProps) {
 
         {/* Actions */}
         <div className="mt-8 text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={handleRestart}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
-            >
-              Volver a empezar
-            </button>
-            <Link
-              href="/candidates"
-              onClick={handleViewAllCandidates}
-              className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto inline-flex items-center justify-center"
-            >
-              Ver todos los candidatos
-            </Link>
-          </div>
+          <button
+            onClick={handleRestart}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.01] active:scale-[0.99]"
+          >
+            Volver a empezar
+          </button>
           <p className="text-xs text-gray-500">
             Estos resultados son solo una guía. Investiga a cada candidato antes de votar.
           </p>
