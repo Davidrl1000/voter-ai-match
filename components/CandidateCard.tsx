@@ -4,7 +4,9 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { getPhotoPath, getLogoPath } from '@/lib/candidate-assets';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
-import { POLICY_AREA_LABELS } from '@/lib/constants';
+import { partyToSlug } from '@/lib/utils';
+import PositionsSection from './PositionsSection';
+import StatsSection from './StatsSection';
 
 interface PdfStats {
   pageCount: number;
@@ -23,29 +25,6 @@ interface CandidateCardProps {
   onPositionsLoaded?: (positions: Record<string, string>) => void;
 }
 
-/**
- * Format reading time into human-readable string
- */
-function formatReadingTime(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-  const hours = Math.round(minutes / 6) / 10; // Round to 1 decimal
-  return `${hours} hrs`;
-}
-
-/**
- * Convert party name to URL-safe slug
- */
-function partyToSlug(party: string): string {
-  return party
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '');
-}
-
 export default function CandidateCard({
   name,
   party,
@@ -59,8 +38,8 @@ export default function CandidateCard({
   const [positions, setPositions] = useState<Record<string, string> | null>(cachedPositions || null);
   const [loadingPositions, setLoadingPositions] = useState(false);
   const [expandedPositions, setExpandedPositions] = useState<Set<string>>(new Set());
-  const [isDesktop, setIsDesktop] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const hasHandledHash = useRef(false);
   const partySlug = partyToSlug(party);
 
   const togglePosition = useCallback((areaKey: string) => {
@@ -75,35 +54,31 @@ export default function CandidateCard({
     });
   }, []);
 
-  // Detect multi-column layout (sm breakpoint = 640px, when grid shows 2+ columns)
+  // Close on ESC key
   useEffect(() => {
-    const checkMultiColumn = () => setIsDesktop(window.innerWidth >= 640);
-    checkMultiColumn();
-    window.addEventListener('resize', checkMultiColumn);
-    return () => window.removeEventListener('resize', checkMultiColumn);
-  }, []);
-
-  // Close on ESC key (desktop only)
-  useEffect(() => {
-    if (!isExpanded || !isDesktop) return;
+    if (!isExpanded) return;
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsExpanded(false);
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isExpanded, isDesktop]);
+  }, [isExpanded]);
 
   // Prevent body scroll when overlay is open (desktop only)
   useEffect(() => {
-    if (isExpanded && isDesktop) {
-      document.body.style.overflow = 'hidden';
+    if (isExpanded) {
+      // Only prevent scroll on desktop (>= 640px)
+      const mediaQuery = window.matchMedia('(min-width: 640px)');
+      if (mediaQuery.matches) {
+        document.body.style.overflow = 'hidden';
+      }
     } else {
       document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isExpanded, isDesktop]);
+  }, [isExpanded]);
 
   // Handle backdrop click
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
@@ -112,48 +87,49 @@ export default function CandidateCard({
     }
   }, []);
 
-  // Check URL hash on mount to pre-expand card
+  // Load positions data
+  const loadPositions = useCallback(() => {
+    if (!positions && !loadingPositions) {
+      setLoadingPositions(true);
+
+      fetch(`/api/positions?party=${encodeURIComponent(party)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.positions) {
+            setPositions(data.positions);
+            onPositionsLoaded?.(data.positions);
+          }
+        })
+        .catch(err => {
+          console.error('Error loading positions:', err);
+        })
+        .finally(() => {
+          setLoadingPositions(false);
+        });
+    }
+  }, [positions, loadingPositions, party, onPositionsLoaded]);
+
+  // Check URL hash on mount to pre-expand card (only once)
   useEffect(() => {
+    if (hasHandledHash.current) return;
+
     const hash = window.location.hash.slice(1); // Remove #
     if (hash === partySlug) {
+      hasHandledHash.current = true;
       // Use setTimeout to avoid synchronous setState in effect
       setTimeout(() => {
         setIsExpanded(true);
-        // Scroll to card after a brief delay
+        loadPositions();
+        // Scroll to top of card after a brief delay
         setTimeout(() => {
           cardRef.current?.scrollIntoView({
             behavior: 'smooth',
-            block: 'center'
+            block: 'start'
           });
         }, 100);
       }, 0);
     }
-  }, [partySlug]);
-
-  // Load positions when expanded
-  useEffect(() => {
-    if (isExpanded && !positions && !loadingPositions) {
-      // Use setTimeout to avoid synchronous setState in effect
-      setTimeout(() => {
-        setLoadingPositions(true);
-
-        fetch(`/api/positions?party=${encodeURIComponent(party)}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.positions) {
-              setPositions(data.positions);
-              onPositionsLoaded?.(data.positions);
-            }
-          })
-          .catch(err => {
-            console.error('Error loading positions:', err);
-          })
-          .finally(() => {
-            setLoadingPositions(false);
-          });
-      }, 0);
-    }
-  }, [isExpanded, positions, loadingPositions, party, onPositionsLoaded]);
+  }, [partySlug, loadPositions]);
 
   const handlePlanClick = useCallback(() => {
     trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
@@ -175,12 +151,17 @@ export default function CandidateCard({
     const newState = !isExpanded;
     setIsExpanded(newState);
 
+    // Load positions when expanding
+    if (newState) {
+      loadPositions();
+    }
+
     trackGTMEvent(GTMEvents.CANDIDATES_TILE_CLICKED, {
       candidateName: name,
       party,
       action: newState ? 'expandir_informacion' : 'colapsar_informacion',
     });
-  }, [isExpanded, name, party]);
+  }, [isExpanded, name, party, loadPositions]);
 
   return (
     <>
@@ -248,121 +229,19 @@ export default function CandidateCard({
       </button>
 
       {/* Expanded Content - Mobile (in-place) */}
-      {isExpanded && !isDesktop && (
-        <div className="overflow-hidden animate-expand">
+      {isExpanded && (
+        <div className="sm:hidden overflow-hidden animate-expand">
           <div className="space-y-4 pt-2 pb-4 border-t border-gray-100">
+            <PositionsSection
+              loadingPositions={loadingPositions}
+              positions={positions}
+              expandedPositions={expandedPositions}
+              togglePosition={togglePosition}
+              variant="mobile"
+            />
 
-            {/* Positions Section */}
-            <div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Image
-                  src="/assets/icons/map-pin.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="w-5 h-5"
-                />
-                <span>Posiciones Políticas</span>
-              </h3>
-
-              {loadingPositions ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="relative w-8 h-8">
-                    <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
-                  </div>
-                </div>
-              ) : positions ? (
-                <div className="space-y-3">
-                  {Object.entries(POLICY_AREA_LABELS).map(([areaKey, areaLabel]) => {
-                    const position = positions[areaKey];
-                    if (!position) return null;
-
-                    const isPositionExpanded = expandedPositions.has(areaKey);
-                    const isTruncated = position.length > 150;
-
-                    return (
-                      <div key={areaKey} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center p-1">
-                            <Image
-                              src={`/assets/icons/${areaKey}.svg`}
-                              alt=""
-                              width={16}
-                              height={16}
-                              className="w-full h-full brightness-0 invert"
-                            />
-                          </div>
-                          <h4 className="text-xs sm:text-sm font-semibold text-gray-900">
-                            {areaLabel}
-                          </h4>
-                        </div>
-                        <p className={`text-xs sm:text-sm text-gray-700 leading-relaxed ${!isPositionExpanded && isTruncated ? 'line-clamp-3' : ''}`}>
-                          {position}
-                        </p>
-                        {isTruncated && (
-                          <button
-                            onClick={() => togglePosition(areaKey)}
-                            className="mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors cursor-pointer"
-                          >
-                            {isPositionExpanded ? 'Ver menos' : 'Ver más'}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs sm:text-sm text-gray-500 text-center py-4">
-                  No hay posiciones disponibles
-                </p>
-              )}
-            </div>
-
-            {/* Stats Section */}
             {planStats && (
-              <div>
-                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Image
-                    src="/assets/icons/chart-bar.svg"
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                  />
-                  <span>Estadísticas del Plan</span>
-                </h3>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Tiempo de lectura</p>
-                    <p className="text-base sm:text-lg font-bold text-gray-900">
-                      {formatReadingTime(planStats.readingTimeMinutes)}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Páginas</p>
-                    <p className="text-base sm:text-lg font-bold text-gray-900">
-                      {planStats.pageCount}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Término más usado</p>
-                    <p className="text-sm sm:text-base font-bold text-gray-900 capitalize truncate">
-                      {planStats.mostUsedWord}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Palabras</p>
-                    <p className="text-sm sm:text-base font-bold text-gray-900">
-                      {planStats.wordCount.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <StatsSection planStats={planStats} variant="mobile" />
             )}
           </div>
         </div>
@@ -392,10 +271,10 @@ export default function CandidateCard({
     </div>
 
     {/* Desktop Overlay Mode */}
-    {isExpanded && isDesktop && (
+    {isExpanded && (
       <div
         onClick={handleBackdropClick}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in"
+        className="hidden sm:flex fixed inset-0 z-50 items-center justify-center p-4 bg-black/50 animate-fade-in"
       >
         <div
           onClick={(e) => e.stopPropagation()}
@@ -432,117 +311,16 @@ export default function CandidateCard({
 
           {/* Content */}
           <div className="p-4 sm:p-6 space-y-6">
-            {/* Positions Section */}
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Image
-                  src="/assets/icons/map-pin.svg"
-                  alt=""
-                  width={24}
-                  height={24}
-                  className="w-6 h-6"
-                />
-                <span>Posiciones Políticas</span>
-              </h3>
+            <PositionsSection
+              loadingPositions={loadingPositions}
+              positions={positions}
+              expandedPositions={expandedPositions}
+              togglePosition={togglePosition}
+              variant="desktop"
+            />
 
-              {loadingPositions ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="relative w-10 h-10">
-                    <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
-                  </div>
-                </div>
-              ) : positions ? (
-                <div className="space-y-3">
-                  {Object.entries(POLICY_AREA_LABELS).map(([areaKey, areaLabel]) => {
-                    const position = positions[areaKey];
-                    if (!position) return null;
-
-                    const isPositionExpanded = expandedPositions.has(areaKey);
-                    const isTruncated = position.length > 150;
-
-                    return (
-                      <div key={areaKey} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex-shrink-0 w-7 h-7 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center p-1.5">
-                            <Image
-                              src={`/assets/icons/${areaKey}.svg`}
-                              alt=""
-                              width={18}
-                              height={18}
-                              className="w-full h-full brightness-0 invert"
-                            />
-                          </div>
-                          <h4 className="text-sm sm:text-base font-semibold text-gray-900">
-                            {areaLabel}
-                          </h4>
-                        </div>
-                        <p className={`text-sm text-gray-700 leading-relaxed ${!isPositionExpanded && isTruncated ? 'line-clamp-3' : ''}`}>
-                          {position}
-                        </p>
-                        {isTruncated && (
-                          <button
-                            onClick={() => togglePosition(areaKey)}
-                            className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors cursor-pointer"
-                          >
-                            {isPositionExpanded ? 'Ver menos' : 'Ver más'}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-8">
-                  No hay posiciones disponibles
-                </p>
-              )}
-            </div>
-
-            {/* Stats Section */}
             {planStats && (
-              <div>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Image
-                    src="/assets/icons/chart-bar.svg"
-                    alt=""
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                  <span>Estadísticas del Plan</span>
-                </h3>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Tiempo de lectura</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900">
-                      {formatReadingTime(planStats.readingTimeMinutes)}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Páginas</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900">
-                      {planStats.pageCount}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Término más usado</p>
-                    <p className="text-base sm:text-lg font-bold text-gray-900 capitalize truncate">
-                      {planStats.mostUsedWord}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600 mb-1">Palabras</p>
-                    <p className="text-base sm:text-lg font-bold text-gray-900">
-                      {planStats.wordCount.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <StatsSection planStats={planStats} variant="desktop" />
             )}
 
             {/* Actions */}

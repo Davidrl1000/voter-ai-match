@@ -7,6 +7,7 @@ import type { UserAnswer } from '@/lib/matching/algorithm';
 import { POLICY_AREA_LABELS } from '@/lib/constants';
 import { getPhotoPath } from '@/lib/candidate-assets';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
+import { partyToSlug } from '@/lib/utils';
 import LoadingSpinner from './LoadingSpinner';
 
 interface CandidateMatch {
@@ -29,18 +30,6 @@ interface ResultsProps {
  */
 function formatScore(score: number): string {
   return score.toFixed(1);
-}
-
-/**
- * Convert party name to URL-safe slug for deep linking
- */
-function partyToSlug(party: string): string {
-  return party
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '');
 }
 
 export default function Results({ answers, onRestart }: ResultsProps) {
@@ -184,9 +173,16 @@ export default function Results({ answers, onRestart }: ResultsProps) {
         {/* Link to candidate profile */}
         <Link
           href={`/candidates#${partyToSlug(topMatch.party)}`}
-          className="block w-full px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold rounded-lg transition-all text-center active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
         >
-          Ver perfil completo de {topMatch.name} →
+          <span>Ver perfil completo</span>
+          <Image
+            src="/assets/icons/arrow-right.svg"
+            alt=""
+            width={16}
+            height={16}
+            className="w-4 h-4 brightness-0 invert"
+          />
         </Link>
       </div>
     );
@@ -250,10 +246,16 @@ export default function Results({ answers, onRestart }: ResultsProps) {
             {/* Link to candidate profile */}
             <Link
               href={`/candidates#${partyToSlug(match.party)}`}
-              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
             >
               Ver perfil completo
-              <span className="text-xs">→</span>
+              <Image
+                src="/assets/icons/arrow-right.svg"
+                alt=""
+                width={14}
+                height={14}
+                className="w-3.5 h-3.5"
+              />
             </Link>
           </div>
 

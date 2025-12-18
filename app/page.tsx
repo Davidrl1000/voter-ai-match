@@ -199,9 +199,22 @@ export default function Home() {
           <button
             onClick={handleStart}
             disabled={isLoadingQuestions}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
           >
-            {isLoadingQuestions ? 'Cargando preguntas...' : 'Comenzar →'}
+            {isLoadingQuestions ? (
+              'Cargando preguntas...'
+            ) : (
+              <>
+                <span>Comenzar</span>
+                <Image
+                  src="/assets/icons/arrow-right.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 brightness-0 invert"
+                />
+              </>
+            )}
           </button>
         </div>
 
