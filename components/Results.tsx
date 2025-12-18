@@ -107,7 +107,6 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
 
       streamNextChunk();
 
-      // Track AI explanation shown (track when streaming starts)
       trackGTMEvent(GTMEvents.RESULTS_AI_EXPLANATION_SHOWN, {
         questionCount: answers.length,
         topMatchName: matchesData[0]?.name,
@@ -121,10 +120,10 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
   }, [answers]);
 
   const handleRestart = useCallback(() => {
+    onRestart();
     trackGTMEvent(GTMEvents.RESULTS_RESTART_CLICKED, {
       questionCount: answers.length,
     });
-    onRestart();
   }, [answers.length, onRestart]);
 
   // Memoize candidate cards to prevent re-renders during AI streaming
@@ -321,7 +320,6 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
         setLoading(false);
 
         if (data.matches.length > 0) {
-          // Track results viewed
           trackGTMEvent(GTMEvents.RESULTS_VIEWED, {
             topMatchName: data.matches[0]?.name,
             topMatchScore: data.matches[0]?.score,

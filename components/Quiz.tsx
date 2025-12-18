@@ -29,6 +29,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
   const [loading, setLoading] = useState(!preloadedQuestions || preloadedQuestions.length === 0);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     // If questions are preloaded, no need to fetch
@@ -58,70 +59,82 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
   const currentQuestion = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  const handleAnswer = useCallback(() => {
-    if (selectedAnswer === null || !currentQuestion) return;
+  const handleAnswer = useCallback(async () => {
+    // Prevent double-clicks and processing if already in progress
+    if (isProcessing || selectedAnswer === null || !currentQuestion) return;
 
-    const answer: UserAnswer = {
-      questionId: currentQuestion.questionId,
-      answer: selectedAnswer,
-      policyArea: currentQuestion.policyArea,
-      questionEmbedding: currentQuestion.embedding,
-    };
+    setIsProcessing(true);
 
-    // Track question answered
-    trackGTMEvent(GTMEvents.QUIZ_QUESTION_ANSWERED, {
-      questionNumber: currentIndex + 1,
-      policyArea: currentQuestion.policyArea,
-      policyAreaLabel: POLICY_AREA_LABELS[currentQuestion.policyArea],
-      answerValue: selectedAnswer,
-      totalQuestions: questions.length,
-    });
+    try {
+      const answer: UserAnswer = {
+        questionId: currentQuestion.questionId,
+        answer: selectedAnswer,
+        policyArea: currentQuestion.policyArea,
+        questionEmbedding: currentQuestion.embedding,
+      };
 
-    let newAnswers;
-    if (currentIndex < answers.length) {
-      // Re-answering a previous question - replace just this answer, keep all others
-      newAnswers = [
-        ...answers.slice(0, currentIndex),
-        answer,
-        ...answers.slice(currentIndex + 1)
-      ];
-    } else {
-      // Answering a new question
-      newAnswers = [...answers, answer];
-    }
-    setAnswers(newAnswers);
-
-    if (currentIndex < questions.length - 1) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-
-      if (newAnswers[nextIndex]) {
-        setSelectedAnswer(newAnswers[nextIndex].answer);
+      let newAnswers;
+      if (currentIndex < answers.length) {
+        newAnswers = [
+          ...answers.slice(0, currentIndex),
+          answer,
+          ...answers.slice(currentIndex + 1)
+        ];
       } else {
-        setSelectedAnswer(null);
+        newAnswers = [...answers, answer];
       }
-    } else {
-      // Track quiz completion
-      trackGTMEvent(GTMEvents.QUIZ_COMPLETED, {
+      setAnswers(newAnswers);
+
+      if (currentIndex < questions.length - 1) {
+        const nextIndex = currentIndex + 1;
+        setCurrentIndex(nextIndex);
+
+        if (newAnswers[nextIndex]) {
+          setSelectedAnswer(newAnswers[nextIndex].answer);
+        } else {
+          setSelectedAnswer(null);
+        }
+      } else {
+        // Last question - complete quiz
+        onComplete(newAnswers);
+
+        // Track quiz completion
+        trackGTMEvent(GTMEvents.QUIZ_COMPLETED, {
+          totalQuestions: questions.length,
+          answeredQuestions: newAnswers.length,
+        });
+
+        return; // Exit early, don't reset processing state
+      }
+
+      // Track question answered
+      trackGTMEvent(GTMEvents.QUIZ_QUESTION_ANSWERED, {
+        questionNumber: currentIndex + 1,
+        policyArea: currentQuestion.policyArea,
+        policyAreaLabel: POLICY_AREA_LABELS[currentQuestion.policyArea],
+        answerValue: selectedAnswer,
         totalQuestions: questions.length,
-        answeredQuestions: newAnswers.length,
       });
-      onComplete(newAnswers);
+
+      setIsProcessing(false);
+    } catch (error) {
+      setIsProcessing(false);
+      throw error;
     }
-  }, [selectedAnswer, currentQuestion, currentIndex, answers, questions.length, onComplete]);
+  }, [isProcessing, selectedAnswer, currentQuestion, currentIndex, answers, questions.length, onComplete]);
 
   const handleBack = useCallback(() => {
-    if (currentIndex > 0) {
-      const previousIndex = currentIndex - 1;
-      setCurrentIndex(previousIndex);
+    if (isProcessing || currentIndex === 0) return;
 
-      if (answers[previousIndex]) {
-        setSelectedAnswer(answers[previousIndex].answer);
-      } else {
-        setSelectedAnswer(null);
-      }
+    const previousIndex = currentIndex - 1;
+    setCurrentIndex(previousIndex);
+
+    if (answers[previousIndex]) {
+      setSelectedAnswer(answers[previousIndex].answer);
+    } else {
+      setSelectedAnswer(null);
     }
-  }, [currentIndex, answers]);
+  }, [isProcessing, currentIndex, answers]);
 
   const handleSelectAnswer = useCallback((value: number | string) => {
     setSelectedAnswer(value);
@@ -329,7 +342,7 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
             <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-between sm:gap-3">
               <button
                 onClick={handleBack}
-                disabled={currentIndex === 0}
+                disabled={currentIndex === 0 || isProcessing}
                 aria-label={`Ir a la pregunta anterior (${currentIndex} de ${questions.length})`}
                 className="px-4 py-2.5 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2"
               >
@@ -345,19 +358,28 @@ export default function Quiz({ onComplete, questionLimit, preloadedQuestions }: 
 
               <button
                 onClick={handleAnswer}
-                disabled={selectedAnswer === null}
+                disabled={selectedAnswer === null || isProcessing}
                 aria-label={currentIndex === questions.length - 1 ? 'Finalizar cuestionario y ver resultados' : `Ir a la siguiente pregunta (${currentIndex + 2} de ${questions.length})`}
-                aria-disabled={selectedAnswer === null}
+                aria-disabled={selectedAnswer === null || isProcessing}
                 className="px-4 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2"
               >
-                <span>{currentIndex === questions.length - 1 ? 'Ver Resultados' : 'Siguiente'}</span>
-                <Image
-                  src="/assets/icons/arrow-right.svg"
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 brightness-0 invert"
-                />
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Procesando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{currentIndex === questions.length - 1 ? 'Ver Resultados' : 'Siguiente'}</span>
+                    <Image
+                      src="/assets/icons/arrow-right.svg"
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="w-4 h-4 brightness-0 invert"
+                    />
+                  </>
+                )}
               </button>
             </div>
           </nav>
