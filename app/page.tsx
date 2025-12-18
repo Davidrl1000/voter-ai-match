@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import InfoModal from '@/components/InfoModal';
 import type { UserAnswer } from '@/lib/matching/algorithm';
 import type { Question } from '@/lib/db/dynamodb';
-import { API_LIMITS, POLICY_AREAS, POLICY_AREA_LABELS, QUESTION_OPTIONS } from '@/lib/constants';
+import { API_LIMITS, QUESTION_OPTIONS } from '@/lib/constants';
 import { Stage } from '@/lib/types/stage';
 import type { Stage as StageType } from '@/lib/types/stage';
 import { trackGTMEvent, GTMEvents } from '@/lib/gtm';
@@ -40,7 +40,6 @@ export default function Home() {
   const [questionLimit, setQuestionLimit] = useState<number>(API_LIMITS.QUESTIONS.DEFAULT);
   const [preloadedQuestions, setPreloadedQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-  const [showAreasModal, setShowAreasModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [cachedResults, setCachedResults] = useState<CachedResults | null>(null);
 
@@ -120,16 +119,6 @@ export default function Home() {
       count,
       label,
     });
-  }, []);
-
-  const handleOpenAreasModal = useCallback(() => {
-    setShowAreasModal(true);
-    trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_OPENED);
-  }, []);
-
-  const handleCloseAreasModal = useCallback(() => {
-    setShowAreasModal(false);
-    trackGTMEvent(GTMEvents.HOME_POLICY_AREAS_CLOSED);
   }, []);
 
   const handleOpenPrivacyModal = useCallback(() => {
@@ -270,30 +259,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={handleOpenAreasModal}
-            className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center hover:border-blue-300 transition-all cursor-pointer hover:scale-105 active:scale-95 w-64"
-          >
-            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1 tabular-nums">
-              {POLICY_AREAS.length}
-            </div>
-            <div className="text-xs text-blue-700 flex items-center justify-center gap-1">
-              <span>Áreas</span>
-              <div className="w-3 h-3">
-                <Image
-                  src="/assets/icons/info-circle.svg"
-                  alt="Información"
-                  width={12}
-                  height={12}
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-          </button>
-        </div>
-
         {/* Privacy Note */}
         <button
           onClick={handleOpenPrivacyModal}
@@ -310,42 +275,6 @@ export default function Home() {
           </div>
           <span className="underline decoration-dotted underline-offset-2">Privado y seguro</span>
         </button>
-
-        {/* Policy Areas Modal */}
-        <InfoModal
-          isOpen={showAreasModal}
-          onClose={handleCloseAreasModal}
-          title="Áreas de Política"
-        >
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600 mb-4">
-              Analizamos tus respuestas en estas 7 áreas clave de política costarricense:
-            </p>
-            <div className="space-y-2">
-              {[...POLICY_AREAS]
-                .sort((a, b) => POLICY_AREA_LABELS[a].localeCompare(POLICY_AREA_LABELS[b]))
-                .map((area) => (
-                  <div
-                    key={area}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg"
-                  >
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center p-1.5">
-                      <Image
-                        src={`/assets/icons/${area}.svg`}
-                        alt=""
-                        width={20}
-                        height={20}
-                        className="w-full h-full brightness-0 invert"
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">
-                      {POLICY_AREA_LABELS[area]}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </InfoModal>
 
         {/* Privacy Modal */}
         <InfoModal
