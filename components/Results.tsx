@@ -134,11 +134,11 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
     if (!topMatch) return null;
 
     return (
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
           {/* Candidate Photo */}
           <div className="relative flex-shrink-0">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white/20">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-4 border-white/20">
               <Image
                 src={getPhotoPath(topMatch.party)}
                 alt={topMatch.name}
@@ -153,28 +153,28 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
           </div>
 
           {/* Candidate Info */}
-          <div className="flex-1">
-            <p className="text-blue-100 text-xs uppercase tracking-wide mb-1">
+          <div className="flex-1 min-w-0">
+            <p className="text-blue-100 text-xs uppercase tracking-wide mb-1 truncate">
               Tu mejor coincidencia
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold">{topMatch.name}</h2>
-            <p className="text-blue-100 mt-1 text-sm">{topMatch.party}</p>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{topMatch.name}</h2>
+            <p className="text-blue-100 mt-1 text-xs sm:text-sm truncate">{topMatch.party}</p>
           </div>
 
           {/* Score */}
-          <div className="text-left sm:text-right">
-            <div className="text-4xl sm:text-5xl font-bold tabular-nums">{formatScore(topMatch.score)}%</div>
+          <div className="text-left sm:text-right flex-shrink-0">
+            <div className="text-3xl sm:text-4xl md:text-5xl font-bold tabular-nums">{formatScore(topMatch.score)}%</div>
             <p className="text-blue-100 text-xs mt-1">Compatibilidad</p>
           </div>
         </div>
 
-        <div className="border-t border-blue-400 pt-4 mb-4">
-          <p className="text-xs text-blue-100 mb-3">Alineación por área:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="border-t border-blue-400 pt-3 sm:pt-4 mb-3 sm:mb-4">
+          <p className="text-xs text-blue-100 mb-2 sm:mb-3">Alineación por área:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
             {Object.entries(topMatch.alignmentByArea).map(([area, score]) => (
-              <div key={area} className="flex justify-between items-center text-sm">
-                <span className="text-blue-50">{POLICY_AREA_LABELS[area] || area}</span>
-                <span className="font-semibold tabular-nums">{formatScore(score)}%</span>
+              <div key={area} className="flex justify-between items-center text-xs sm:text-sm gap-2">
+                <span className="text-blue-50 truncate">{POLICY_AREA_LABELS[area] || area}</span>
+                <span className="font-semibold tabular-nums flex-shrink-0">{formatScore(score)}%</span>
               </div>
             ))}
           </div>
@@ -184,9 +184,10 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
         <Link
           href={`/candidates#${partyToSlug(topMatch.party)}`}
           onClick={markNavigatedToCandidates}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-xs sm:text-sm font-semibold rounded-lg transition-all active:scale-[0.98]"
         >
-          <span>Ver perfil completo</span>
+          <span className="hidden min-[380px]:inline">Ver perfil completo</span>
+          <span className="inline min-[380px]:hidden">Ver perfil</span>
           <Image
             src="/assets/icons/arrow-right.svg"
             alt=""
@@ -203,12 +204,12 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
     return matches.slice(1).map((match, index) => (
       <div
         key={match.candidateId}
-        className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors"
+        className="bg-white border border-gray-200 rounded-xl p-3 sm:p-5 hover:border-gray-300 transition-colors"
       >
-        <div className="flex items-start gap-4 mb-3">
+        <div className="flex items-start gap-2 sm:gap-4 mb-2 sm:mb-3">
           {/* Candidate Photo with Ranking Badge */}
           <div className="relative flex-shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gray-200">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-gray-200">
               <Image
                 src={getPhotoPath(match.party)}
                 alt={match.name}
@@ -221,18 +222,18 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
               />
             </div>
             {/* Ranking Number */}
-            <div className="absolute -top-1 -left-1 w-7 h-7 flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full text-sm shadow-md">
+            <div className="absolute -top-1 -left-1 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full text-xs sm:text-sm shadow-md">
               {index + 2}
             </div>
           </div>
 
           {/* Candidate Info */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900">{match.name}</h3>
-            <p className="text-gray-600 text-sm mb-2">{match.party}</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{match.name}</h3>
+            <p className="text-gray-600 text-xs sm:text-sm mb-1.5 sm:mb-2 truncate">{match.party}</p>
 
             {/* Progress Bar */}
-            <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
+            <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-1.5 sm:mb-2">
               <div
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all"
                 style={{ width: `${match.score}%` }}
@@ -240,14 +241,14 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
             </div>
 
             {/* Top Areas */}
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
               {Object.entries(match.alignmentByArea)
                 .sort(([, a], [, b]) => b - a)
                 .slice(0, 3)
                 .map(([area, score]) => (
                   <span
                     key={area}
-                    className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                    className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full whitespace-nowrap"
                   >
                     {POLICY_AREA_LABELS[area]}: {formatScore(score)}%
                   </span>
@@ -258,21 +259,22 @@ export default function Results({ answers, onRestart, cachedResults }: ResultsPr
             <Link
               href={`/candidates#${partyToSlug(match.party)}`}
               onClick={markNavigatedToCandidates}
-              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-1 sm:gap-1.5 text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium transition-colors"
             >
-              Ver perfil completo
+              <span className="hidden min-[380px]:inline">Ver perfil completo</span>
+              <span className="inline min-[380px]:hidden">Ver perfil</span>
               <Image
                 src="/assets/icons/arrow-right.svg"
                 alt=""
                 width={14}
                 height={14}
-                className="w-3.5 h-3.5"
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5"
               />
             </Link>
           </div>
 
           {/* Score */}
-          <span className="text-xl font-bold text-gray-900 tabular-nums flex-shrink-0">
+          <span className="text-base sm:text-xl font-bold text-gray-900 tabular-nums flex-shrink-0">
             {formatScore(match.score)}%
           </span>
         </div>
