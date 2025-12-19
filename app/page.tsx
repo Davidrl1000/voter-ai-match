@@ -205,17 +205,17 @@ export default function Home() {
         {/* Main Content */}
         <div className="space-y-4 mb-8">
           {/* Question Selector */}
-          <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+          <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4 sm:p-6 md:p-8">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 text-center">
               Elige la cantidad de preguntas
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {QUESTION_OPTIONS.map((option) => (
                 <button
                   key={option.count}
                   onClick={() => handleQuestionLimitChange(option.count, option.label)}
                   className={`
-                    p-4 rounded-lg border-2 transition-all duration-200
+                    p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all duration-200
                     ${questionLimit === option.count
                       ? 'border-blue-600 bg-blue-50 shadow-md'
                       : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
@@ -223,13 +223,13 @@ export default function Home() {
                   `}
                 >
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 mb-1">
+                    <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-1">
                       {option.count}
                     </div>
-                    <div className={`text-sm font-medium mb-1 ${questionLimit === option.count ? 'text-blue-600' : 'text-gray-700'}`}>
+                    <div className={`text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 ${questionLimit === option.count ? 'text-blue-600' : 'text-gray-700'}`}>
                       {option.label}
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-[10px] sm:text-xs text-gray-600">
                       {option.description}
                     </div>
                   </div>
@@ -242,11 +242,11 @@ export default function Home() {
           <button
             onClick={handleStart}
             disabled={isLoadingQuestions}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-base sm:text-lg py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm sm:text-base md:text-lg py-3 sm:py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer flex items-center justify-center gap-2"
           >
             {isLoadingQuestions ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 <span>Cargando preguntas...</span>
               </>
             ) : (
@@ -257,7 +257,7 @@ export default function Home() {
                   alt=""
                   width={20}
                   height={20}
-                  className="w-5 h-5 brightness-0 invert"
+                  className="w-4 h-4 sm:w-5 sm:h-5 brightness-0 invert"
                 />
               </>
             )}
