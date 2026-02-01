@@ -117,7 +117,7 @@ export default function ElectionResultsWidget() {
                       height={24}
                       className="brightness-0 invert"
                     />
-                    Resultados en Vivo
+                    Resultados Votante AI
                   </h2>
                   <p className="text-blue-100 text-sm mt-1">
                     {formatNumber(data.totalParticipants)} participantes
@@ -219,7 +219,7 @@ export default function ElectionResultsWidget() {
             {/* Footer */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
               <p className="text-xs text-gray-500 text-center">
-                Porcentaje de usuarios que obtuvieron a cada candidato como su mejor coincidencia
+                Porcentaje de usuarios que obtuvieron a cada candidato en Votante AI
               </p>
             </div>
           </div>
