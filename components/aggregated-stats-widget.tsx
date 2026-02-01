@@ -41,8 +41,11 @@ export function AggregatedStatsWidget() {
     return () => clearInterval(interval);
   }, [fetchStats]);
 
-  if (!stats || stats.totalMatches === 0) {
-    return null; // Don't show widget if no data
+  // Hide widget - replaced by ElectionResultsWidget
+  const showWidget = process.env.NEXT_PUBLIC_SHOW_STATS_WIDGET === 'true';
+
+  if (!showWidget || !stats || stats.totalMatches === 0) {
+    return null;
   }
 
   return (

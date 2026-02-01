@@ -1,0 +1,26 @@
+{
+  "showNationalResults": false,
+  "lastUpdated": "2026-01-19T00:00:00Z",
+  "nationalResults": {
+    "ACRM": 20,
+    "CAC": 40,
+    "CDS": 30,
+    "CR1": 20,
+    "FA": 25,
+    "PA": 60,
+    "PDLCT": 80,
+    "PEL": 60,
+    "PEN": 30,
+    "PIN": 20,
+    "PJSC": 30,
+    "PLN": 50,
+    "PLP": 70,
+    "PNG": 80,
+    "PNR": 90,
+    "PPSD": 10,
+    "PPSO": 20,
+    "PUCD": 30,
+    "PUSC": 40,
+    "UP": 50
+  }
+}
