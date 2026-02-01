@@ -219,7 +219,7 @@ export default function ElectionResultsWidget() {
             {/* Footer */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
               <p className="text-xs text-gray-500 text-center">
-                Porcentaje de usuarios que obtuvieron a cada candidato en Votante AI
+                Porcentaje de coincidencias que obtuvo cada candidato en Votante AI
               </p>
             </div>
           </div>
