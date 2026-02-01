@@ -22,6 +22,11 @@ const Results = dynamic(() => import('@/components/Results'), {
   loading: () => <div className="min-h-screen flex items-center justify-center">Cargando resultados...</div>,
 });
 
+const ElectionResultsWidget = dynamic(() => import('@/components/ElectionResultsWidget'), {
+  ssr: false,
+  loading: () => null,
+});
+
 interface CachedResults {
   matches: Array<{
     candidateId: string;
@@ -204,6 +209,9 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="space-y-4 mb-8">
+          {/* Election Results Widget */}
+          <ElectionResultsWidget />
+
           {/* Question Selector */}
           <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4 sm:p-6 md:p-8">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 text-center">
